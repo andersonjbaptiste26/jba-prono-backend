@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
 from math import prod
+from uuid import UUID
 
 from ..database import get_db
 from ..models import Bet, BetSelection, Event
@@ -15,7 +16,7 @@ class SelectionIn(BaseModel):
 
 
 class BetIn(BaseModel):
-    user_id: str
+    user_id: UUID
     stake: float
     selections: List[SelectionIn]
 
@@ -23,16 +24,25 @@ class BetIn(BaseModel):
 @router.post("")
 def create_bet(payload: BetIn, db: Session = Depends(get_db)):
     """POST /bets — construit le panier, calcule cote totale + gain potentiel."""
-    events = db.query(Event).filter(Event.id.in_([s.event_id for s in payload.selections])).all()
-    if len(events) != len(payload.selections):
+    if not payload.selections:
+        raise HTTPException(status_code=400, detail="Au moins une sélection est requise")
+
+    event_ids = [s.event_id for s in payload.selections]
+    events = db.query(Event).filter(Event.id.in_(event_ids)).all()
+    if len(events) != len(event_ids):
         raise HTTPException(status_code=400, detail="Un ou plusieurs événements sont introuvables")
 
-    odds_values = [float(e.odds_value) for e in events]
+    odds_values = []
+    for e in events:
+        if e.odds_value is None:
+            raise HTTPException(status_code=400, detail=f"Cote manquante pour l'événement {e.id}")
+        odds_values.append(float(e.odds_value))
+
     total_odds = prod(odds_values) if odds_values else 1.0
     potential_gain = round(payload.stake * total_odds, 2)
 
     bet = Bet(
-        user_id=payload.user_id,
+        user_id=str(payload.user_id),
         stake=payload.stake,
         total_odds=round(total_odds, 3),
         potential_gain=potential_gain,
