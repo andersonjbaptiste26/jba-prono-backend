@@ -40,9 +40,11 @@ class TeamStats:
 
 def _score_form(stats: TeamStats) -> float:
     """Score de forme sur les 5 derniers matchs (0-100)."""
+    if not stats.form_last5:
+        return 50.0
     points = {"V": 3, "N": 1, "D": 0}
     total = sum(points.get(r, 0) for r in stats.form_last5[-5:])
-    return (total / 15) * 100 if stats.form_last5 else 50.0
+    return (total / 15) * 100
 
 
 def _score_attack(stats: TeamStats) -> float:
