@@ -1,13 +1,20 @@
 import uuid
 from sqlalchemy import (
-    Column, Integer, String, Numeric, Boolean, TIMESTAMP, ForeignKey, JSON, func
+    Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date, ForeignKey, JSON, func
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-
+class Season(Base):
+    __tablename__ = "seasons"
+    id = Column(Integer, primary_key=True)
+    league_id = Column(Integer, ForeignKey("leagues.id"))
+    label = Column(String)
+    start_date = Column(Date)
+    end_date = Column(Date)
+    
 class League(Base):
     __tablename__ = "leagues"
     id = Column(Integer, primary_key=True)
