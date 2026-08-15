@@ -1,4 +1,5 @@
 import uuid
+# rebuild trigger
 from sqlalchemy import (
     Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date, ForeignKey, JSON, func
 )
