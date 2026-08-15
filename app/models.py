@@ -54,7 +54,36 @@ class Match(Base):
     away_team = relationship("Team", foreign_keys=[away_team_id])
     events = relationship("Event", back_populates="match")
 
+class TeamStatistics(Base):
+    __tablename__ = "team_statistics"
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey("teams.id"))
+    competition_id = Column(Integer, ForeignKey("competitions.id"), nullable=True)
+    season_id = Column(Integer, ForeignKey("seasons.id"), nullable=True)
+    matches_played = Column(Integer, default=0)
+    wins = Column(Integer, default=0)
+    draws = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    goals_for = Column(Integer, default=0)
+    goals_against = Column(Integer, default=0)
+    clean_sheets = Column(Integer, default=0)
+    btts_count = Column(Integer, default=0)
+    form_last5 = Column(String)
+    home_wins = Column(Integer, default=0)
+    away_wins = Column(Integer, default=0)
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
+
+class Odds(Base):
+    __tablename__ = "odds"
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("matches.id"))
+    market = Column(String, nullable=False)
+    selection = Column(String, nullable=False)
+    value = Column(Numeric(6, 2), nullable=False)
+    source = Column(String)
+    fetched_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    
 class Event(Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True)
