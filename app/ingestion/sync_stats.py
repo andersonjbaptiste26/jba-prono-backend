@@ -1,25 +1,30 @@
 """
-Synchronise les statistiques d'équipe depuis API-Football, puis calcule
-le Team Rating pour chaque équipe déjà connue en base.
+Synchronise les statistiques d'équipe depuis football-data.org (classements
+de la saison en cours), puis calcule le Team Rating pour chaque équipe
+déjà connue en base (issue de la synchro The Odds API).
 """
 import re
 from sqlalchemy.orm import Session
 
 from ..models import Team, League, TeamStatistics, TeamRating
 from ..scoring import compute_team_rating, TeamStats
-from .api_football_client import get_teams, get_team_statistics, LEAGUE_IDS, ApiFootballError
+from .football_data_client import get_standings, COMPETITION_CODES, FootballDataError
 
 
 def _normalize(name: str) -> str:
+    name = re.sub(r"\b(FC|CF|AFC|SC|AC)\b", "", name, flags=re.IGNORECASE)
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
-def _match_api_football_id(team_name: str, af_teams: list[dict]) -> int | None:
+def _match_team(team_name: str, table: list[dict]) -> dict | None:
     target = _normalize(team_name)
-    for entry in af_teams:
-        af_name = entry["team"]["name"]
-        if _normalize(af_name) == target or target in _normalize(af_name) or _normalize(af_name) in target:
-            return entry["team"]["id"]
+    for entry in table:
+        fd_name = entry["team"]["name"]
+        fd_short = entry["team"].get("shortName", "")
+        if _normalize(fd_name) == target or _normalize(fd_short) == target:
+            return entry
+        if target in _normalize(fd_name) or _normalize(fd_name) in target:
+            return entry
     return None
 
 
@@ -27,7 +32,8 @@ def _parse_form(form_str: str | None) -> str:
     if not form_str:
         return ""
     mapping = {"W": "V", "D": "N", "L": "D"}
-    return "".join(mapping.get(c, "") for c in form_str[-5:])
+    parts = form_str.split(",")
+    return "".join(mapping.get(p.strip(), "") for p in parts[-5:])
 
 
 def sync_team_stats_for_league(db: Session, league_name: str) -> dict:
@@ -35,42 +41,43 @@ def sync_team_stats_for_league(db: Session, league_name: str) -> dict:
     if not league:
         return {"league": league_name, "error": "Championnat introuvable en base (synchronise d'abord les matchs)."}
 
-    af_league_id = LEAGUE_IDS.get(league_name)
-    if not af_league_id:
-        return {"league": league_name, "error": "Championnat non mappé côté API-Football."}
+    code = COMPETITION_CODES.get(league_name)
+    if not code:
+        return {"league": league_name, "error": "Championnat non mappé côté football-data.org."}
 
     known_teams = db.query(Team).filter(Team.league_id == league.id).all()
     if not known_teams:
         return {"league": league_name, "error": "Aucune équipe en base pour ce championnat."}
 
-    af_teams = get_teams(af_league_id)
+    data = get_standings(code)
+    standings_list = data.get("standings", [])
+
+    total_table = next((s["table"] for s in standings_list if s.get("type") == "TOTAL"), [])
+    home_table = next((s["table"] for s in standings_list if s.get("type") == "HOME"), [])
+    away_table = next((s["table"] for s in standings_list if s.get("type") == "AWAY"), [])
+
     processed, skipped = 0, 0
 
     for team in known_teams:
-        af_team_id = _match_api_football_id(team.name, af_teams)
-        if not af_team_id:
+        entry = _match_team(team.name, total_table)
+        if not entry:
             skipped += 1
             continue
 
-        stats_raw = get_team_statistics(af_league_id, af_team_id)
-        if not stats_raw:
-            skipped += 1
-            continue
+        played = entry.get("playedGames", 0) or 0
+        wins = entry.get("won", 0) or 0
+        draws = entry.get("draw", 0) or 0
+        losses = entry.get("lost", 0) or 0
+        goals_for = entry.get("goalsFor", 0) or 0
+        goals_against = entry.get("goalsAgainst", 0) or 0
+        form_last5 = _parse_form(entry.get("form"))
 
-        fixtures = stats_raw.get("fixtures", {})
-        goals = stats_raw.get("goals", {})
-        clean_sheet = stats_raw.get("clean_sheet", {})
+        home_entry = _match_team(team.name, home_table)
+        away_entry = _match_team(team.name, away_table)
+        home_wins = home_entry.get("won", 0) if home_entry else 0
+        away_wins = away_entry.get("won", 0) if away_entry else 0
 
-        played = fixtures.get("played", {}).get("total", 0) or 0
-        wins = fixtures.get("wins", {}).get("total", 0) or 0
-        draws = fixtures.get("draws", {}).get("total", 0) or 0
-        losses = fixtures.get("loses", {}).get("total", 0) or 0
-        goals_for = goals.get("for", {}).get("total", {}).get("total", 0) or 0
-        goals_against = goals.get("against", {}).get("total", {}).get("total", 0) or 0
-        clean_sheets = clean_sheet.get("total", 0) or 0
-        home_wins = fixtures.get("wins", {}).get("home", 0) or 0
-        away_wins = fixtures.get("wins", {}).get("away", 0) or 0
-        form_last5 = _parse_form(stats_raw.get("form"))
+        clean_sheets = 0
 
         ts = db.query(TeamStatistics).filter(
             TeamStatistics.team_id == team.id, TeamStatistics.competition_id.is_(None)
@@ -119,9 +126,9 @@ def sync_team_stats_for_league(db: Session, league_name: str) -> dict:
 
 def sync_all_team_stats(db: Session) -> list[dict]:
     results = []
-    for league_name in LEAGUE_IDS:
+    for league_name in COMPETITION_CODES:
         try:
             results.append(sync_team_stats_for_league(db, league_name))
-        except ApiFootballError as e:
+        except FootballDataError as e:
             results.append({"league": league_name, "error": str(e)})
     return results
