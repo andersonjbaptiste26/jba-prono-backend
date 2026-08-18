@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..ingestion.sync import sync_all_leagues
 from ..ingestion.sync_stats import sync_all_team_stats
+from ..prediction.engine import generate_all_predictions
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -26,3 +27,9 @@ def sync_odds(db: Session = Depends(get_db), _: None = Depends(_check_token)):
 def sync_stats(db: Session = Depends(get_db), _: None = Depends(_check_token)):
     results = sync_all_team_stats(db)
     return {"results": results}
+
+
+@router.post("/generate-predictions")
+def generate_predictions(db: Session = Depends(get_db), _: None = Depends(_check_token)):
+    result = generate_all_predictions(db)
+    return result
