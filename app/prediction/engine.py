@@ -68,4 +68,4 @@ def generate_predictions_for_match(db: Session, match: Match) -> bool:
     if has_ratings:
         rating_home = float(home_rating_row.rating)
         rating_away = float(away_rating_row.rating)
-        rating_probs = rating_based_probabilities(rating_home, ratin
+        rating_probs = rating_based_probabilities(rating_home, rating_away)
