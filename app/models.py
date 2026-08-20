@@ -61,6 +61,7 @@ class Match(Base):
     home_team = relationship("Team", foreign_keys=[home_team_id])
     away_team = relationship("Team", foreign_keys=[away_team_id])
     events = relationship("Event", back_populates="match")
+    competition = relationship("Competition")
 
 class TeamStatistics(Base):
     __tablename__ = "team_statistics"
