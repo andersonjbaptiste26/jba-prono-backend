@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
 from math import prod
-from uuid import UUID
+import uuid as uuid_lib
 
 from ..database import get_db
-from ..models import Bet, BetSelection, Event
+from ..models import Bet, BetSelection, Event, User
 
 router = APIRouter(prefix="/bets", tags=["bets"])
 
@@ -16,33 +16,44 @@ class SelectionIn(BaseModel):
 
 
 class BetIn(BaseModel):
-    user_id: UUID
+    user_id: str
     stake: float
     selections: List[SelectionIn]
 
 
+def _get_or_create_anonymous_user(db: Session, user_id: str) -> str:
+    try:
+        parsed = uuid_lib.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="user_id doit être un UUID valide.")
+
+    user = db.query(User).filter(User.id == parsed).first()
+    if not user:
+        user = User(
+            id=parsed,
+            email=f"anon-{parsed}@device.local",
+            password_hash="",
+            display_name="Utilisateur anonyme",
+        )
+        db.add(user)
+        db.flush()
+    return str(parsed)
+
+
 @router.post("")
 def create_bet(payload: BetIn, db: Session = Depends(get_db)):
-    """POST /bets — construit le panier, calcule cote totale + gain potentiel."""
-    if not payload.selections:
-        raise HTTPException(status_code=400, detail="Au moins une sélection est requise")
+    user_id = _get_or_create_anonymous_user(db, payload.user_id)
 
-    event_ids = [s.event_id for s in payload.selections]
-    events = db.query(Event).filter(Event.id.in_(event_ids)).all()
-    if len(events) != len(event_ids):
+    events = db.query(Event).filter(Event.id.in_([s.event_id for s in payload.selections])).all()
+    if len(events) != len(payload.selections):
         raise HTTPException(status_code=400, detail="Un ou plusieurs événements sont introuvables")
 
-    odds_values = []
-    for e in events:
-        if e.odds_value is None:
-            raise HTTPException(status_code=400, detail=f"Cote manquante pour l'événement {e.id}")
-        odds_values.append(float(e.odds_value))
-
+    odds_values = [float(e.odds_value) for e in events]
     total_odds = prod(odds_values) if odds_values else 1.0
     potential_gain = round(payload.stake * total_odds, 2)
 
     bet = Bet(
-        user_id=str(payload.user_id),
+        user_id=user_id,
         stake=payload.stake,
         total_odds=round(total_odds, 3),
         potential_gain=potential_gain,
@@ -66,7 +77,6 @@ def create_bet(payload: BetIn, db: Session = Depends(get_db)):
 
 @router.get("/history")
 def bet_history(user_id: str, db: Session = Depends(get_db)):
-    """GET /bets/history — historique + statistiques agrégées."""
     bets = db.query(Bet).filter(Bet.user_id == user_id).order_by(Bet.created_at.desc()).all()
 
     total = len(bets)
