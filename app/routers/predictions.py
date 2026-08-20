@@ -46,7 +46,11 @@ def _serialize(p: Prediction) -> dict:
     match = event.match if event else None
     return {
         "prediction_id": p.id,
+        "event_id": event.id if event else None,
         "match": f"{match.home_team.name} vs {match.away_team.name}" if match else None,
+        "home_team": match.home_team.name if match else None,
+        "away_team": match.away_team.name if match else None,
+        "competition": match.competition.name if match and match.competition else None,
         "kickoff_at": match.kickoff_at.isoformat() if match else None,
         "event": event.label if event else None,
         "probability": float(p.probability),
