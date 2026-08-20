@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from ..database import get_db
 from ..models import Prediction, Event, Match
@@ -11,15 +11,19 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 @router.get("")
 def list_predictions(
     min_probability: float = Query(0, ge=0, le=100),
+    only_upcoming: bool = Query(True, description="Exclut les matchs déjà commencés/joués."),
     db: Session = Depends(get_db),
 ):
     """GET /predictions — toutes les prédictions, filtrables par probabilité min."""
-    rows = (
+    query = (
         db.query(Prediction)
+        .join(Event, Prediction.event_id == Event.id)
+        .join(Match, Event.match_id == Match.id)
         .filter(Prediction.probability >= min_probability)
-        .order_by(desc(Prediction.probability))
-        .all()
     )
+    if only_upcoming:
+        query = query.filter(Match.kickoff_at >= func.now())
+    rows = query.order_by(desc(Prediction.probability)).all()
     return [_serialize(p) for p in rows]
 
 
@@ -30,10 +34,13 @@ def best_predictions(
     db: Session = Depends(get_db),
 ):
     """GET /predictions/best — la page 'Best Picks'. Seuil réglable via min_probability
-    (80 par défaut, l'objectif produit officiel)."""
+    (80 par défaut, l'objectif produit officiel). Exclut toujours les matchs déjà commencés."""
     rows = (
         db.query(Prediction)
+        .join(Event, Prediction.event_id == Event.id)
+        .join(Match, Event.match_id == Match.id)
         .filter(Prediction.probability >= min_probability)
+        .filter(Match.kickoff_at >= func.now())
         .order_by(desc(Prediction.probability))
         .limit(limit)
         .all()
