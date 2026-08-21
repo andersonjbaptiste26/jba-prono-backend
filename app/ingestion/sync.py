@@ -1,5 +1,6 @@
 """
 Synchronise les matchs et cotes de The Odds API vers la base PostgreSQL.
+Remplit : leagues, competitions, teams, matches, odds, events.
 """
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -67,38 +68,62 @@ def sync_league(db: Session, sport_key: str, league_name: str) -> dict:
 
         if game.get("bookmakers"):
             bookmaker = game["bookmakers"][0]
-            h2h_market = next((m for m in bookmaker["markets"] if m["key"] == "h2h"), None)
-            if h2h_market:
-                for outcome in h2h_market["outcomes"]:
-                    db.add(Odds(
-                        match_id=match.id,
-                        market="h2h",
-                        selection=outcome["name"],
-                        value=outcome["price"],
-                        source=bookmaker["key"],
-                    ))
-                    if outcome["name"] == game["home_team"]:
-                        label = "1 — Victoire domicile"
-                    elif outcome["name"] == game["away_team"]:
-                        label = "2 — Victoire extérieur"
-                    else:
-                        label = "X — Match nul"
-
-                    event = db.query(Event).filter(
-                        Event.match_id == match.id, Event.label == label
-                    ).first()
-                    if event:
-                        event.odds_value = outcome["price"]
-                    else:
-                        db.add(Event(
-                            match_id=match.id,
-                            type="resultat",
-                            label=label,
-                            odds_value=outcome["price"],
-                        ))
+            _sync_h2h_events(db, match, bookmaker, game)
+            _sync_totals_events(db, match, bookmaker)
+            _sync_btts_events(db, match, bookmaker)
 
     db.commit()
     return {"league": league_name, "matches_created": created, "matches_updated": updated, "total_fetched": len(games)}
+
+
+def _upsert_event(db: Session, match: Match, event_type: str, label: str, odds_value: float, market_key: str, selection: str, bookmaker_key: str):
+    db.add(Odds(
+        match_id=match.id, market=market_key, selection=selection,
+        value=odds_value, source=bookmaker_key,
+    ))
+    event = db.query(Event).filter(Event.match_id == match.id, Event.label == label).first()
+    if event:
+        event.odds_value = odds_value
+    else:
+        db.add(Event(match_id=match.id, type=event_type, label=label, odds_value=odds_value))
+
+
+def _sync_h2h_events(db: Session, match: Match, bookmaker: dict, game: dict):
+    h2h_market = next((m for m in bookmaker["markets"] if m["key"] == "h2h"), None)
+    if not h2h_market:
+        return
+    for outcome in h2h_market["outcomes"]:
+        if outcome["name"] == game["home_team"]:
+            label = "1 — Victoire domicile"
+        elif outcome["name"] == game["away_team"]:
+            label = "2 — Victoire extérieur"
+        else:
+            label = "X — Match nul"
+        _upsert_event(db, match, "resultat", label, outcome["price"], "h2h", outcome["name"], bookmaker["key"])
+
+
+def _sync_totals_events(db: Session, match: Match, bookmaker: dict):
+    totals_market = next((m for m in bookmaker["markets"] if m["key"] == "totals"), None)
+    if not totals_market:
+        return
+    for outcome in totals_market["outcomes"]:
+        point = outcome.get("point")
+        if point is None:
+            continue
+        if outcome["name"] == "Over":
+            label = f"+{point} buts"
+        else:
+            label = f"-{point} buts"
+        _upsert_event(db, match, "buts", label, outcome["price"], "totals", outcome["name"], bookmaker["key"])
+
+
+def _sync_btts_events(db: Session, match: Match, bookmaker: dict):
+    btts_market = next((m for m in bookmaker["markets"] if m["key"] == "btts"), None)
+    if not btts_market:
+        return
+    for outcome in btts_market["outcomes"]:
+        label = "BTTS — Oui" if outcome["name"] == "Yes" else "BTTS — Non"
+        _upsert_event(db, match, "btts", label, outcome["price"], "btts", outcome["name"], bookmaker["key"])
 
 
 def sync_all_leagues(db: Session) -> list[dict]:
