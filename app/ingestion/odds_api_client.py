@@ -22,10 +22,15 @@ class OddsApiError(Exception):
     pass
 
 
-def fetch_odds(sport_key: str, regions: str = "eu", markets: str = "h2h,totals,btts") -> list[dict]:
+def fetch_odds(sport_key: str, regions: str = "eu", markets: str = "h2h,totals") -> list[dict]:
     """Récupère les matchs à venir + cotes pour plusieurs types d'événements
-    (résultat, buts +/-, BTTS) en un seul appel. Coût : 1 crédit par marché
-    demandé x 1 région (3 marchés = 3 crédits par appel)."""
+    (résultat, buts +/-) en un seul appel. Coût : 1 crédit par marché
+    demandé x 1 région (2 marchés = 2 crédits par appel).
+
+    Note : 'btts' n'est PAS un marché valide sur cet endpoint "en masse" —
+    seuls h2h, spreads et totals le sont. BTTS existe uniquement via
+    l'endpoint par match (1 appel/match), trop coûteux pour le quota
+    gratuit actuel. À réintégrer si on passe sur un plan payant."""
     if not API_KEY:
         raise OddsApiError("ODDS_API_KEY n'est pas configurée (variable d'environnement manquante).")
 
