@@ -1,6 +1,10 @@
 """
 Moteur de probabilité v1 (roadmap phase 4) — approche statistique,
 avant de passer au Machine Learning plus tard.
+
+Analyse TOUS les types d'événements d'un match (résultat, buts, BTTS)
+et calcule une probabilité pour chacun. La sélection du "meilleur"
+événement par match se fait ensuite côté /predictions/best.
 """
 import math
 from sqlalchemy.orm import Session
@@ -16,6 +20,12 @@ BASE_DRAW_RATE = 0.26
 
 def implied_probabilities(odds_home: float, odds_draw: float, odds_away: float) -> list[float]:
     raw = [1 / odds_home, 1 / odds_draw, 1 / odds_away]
+    total = sum(raw)
+    return [r / total for r in raw]
+
+
+def implied_probabilities_two_way(odds_a: float, odds_b: float) -> list[float]:
+    raw = [1 / odds_a, 1 / odds_b]
     total = sum(raw)
     return [r / total for r in raw]
 
@@ -37,9 +47,18 @@ def blend_probabilities(market: list[float], rating: list[float]) -> list[float]
     return [b / total for b in blended]
 
 
-def generate_predictions_for_match(db: Session, match: Match) -> bool:
-    events = db.query(Event).filter(Event.match_id == match.id, Event.type == "resultat").all()
+def _save_prediction(db: Session, event: Event, percentage: float, explanation: dict):
+    prediction = db.query(Prediction).filter(Prediction.event_id == event.id).first()
+    if not prediction:
+        prediction = Prediction(event_id=event.id)
+        db.add(prediction)
+    prediction.probability = percentage
+    prediction.confidence_tier = confidence_tier(percentage)
+    prediction.model_version = "v1-statistique"
+    prediction.explanation = explanation
 
+
+def _generate_resultat_predictions(db: Session, match: Match, events: list[Event]) -> bool:
     home_event = next((e for e in events if e.label.startswith("1")), None)
     draw_event = next((e for e in events if e.label.startswith("X")), None)
     away_event = next((e for e in events if e.label.startswith("2")), None)
@@ -55,7 +74,6 @@ def generate_predictions_for_match(db: Session, match: Match) -> bool:
 
     home_rating_row = db.query(TeamRating).filter(TeamRating.team_id == match.home_team_id).first()
     away_rating_row = db.query(TeamRating).filter(TeamRating.team_id == match.away_team_id).first()
-
     has_ratings = home_rating_row is not None and away_rating_row is not None
 
     if has_ratings:
@@ -70,10 +88,9 @@ def generate_predictions_for_match(db: Session, match: Match) -> bool:
         final_probs = market_probs
 
     labels = ["Victoire domicile", "Match nul", "Victoire extérieur"]
-    for event, prob, label in zip([home_event, draw_event, away_event], final_probs, labels):
+    ordered_events = [home_event, draw_event, away_event]
+    for idx, (event, prob, label) in enumerate(zip(ordered_events, final_probs, labels)):
         percentage = round(prob * 100, 2)
-        tier = confidence_tier(percentage)
-        idx = [home_event, draw_event, away_event].index(event)
         explanation = {
             "type_pronostic": label,
             "probabilite_marche_pct": round(market_probs[idx] * 100, 2),
@@ -83,17 +100,42 @@ def generate_predictions_for_match(db: Session, match: Match) -> bool:
             "rating_disponible": has_ratings,
             "cote": float(event.odds_value),
         }
-
-        prediction = db.query(Prediction).filter(Prediction.event_id == event.id).first()
-        if not prediction:
-            prediction = Prediction(event_id=event.id)
-            db.add(prediction)
-        prediction.probability = percentage
-        prediction.confidence_tier = tier
-        prediction.model_version = "v1-statistique"
-        prediction.explanation = explanation
-
+        _save_prediction(db, event, percentage, explanation)
     return True
+
+
+def _generate_two_way_predictions(db: Session, events: list[Event], event_type: str) -> bool:
+    typed_events = [e for e in events if e.type == event_type and e.odds_value]
+    if len(typed_events) < 2:
+        return False
+
+    a, b = typed_events[0], typed_events[1]
+    probs = implied_probabilities_two_way(float(a.odds_value), float(b.odds_value))
+
+    for event, prob in zip([a, b], probs):
+        percentage = round(prob * 100, 2)
+        explanation = {
+            "type_pronostic": event.label,
+            "probabilite_marche_pct": percentage,
+            "rating_disponible": False,
+            "cote": float(event.odds_value),
+        }
+        _save_prediction(db, event, percentage, explanation)
+    return True
+
+
+def generate_predictions_for_match(db: Session, match: Match) -> bool:
+    all_events = db.query(Event).filter(Event.match_id == match.id).all()
+
+    success = False
+    if _generate_resultat_predictions(db, match, all_events):
+        success = True
+    if _generate_two_way_predictions(db, all_events, "buts"):
+        success = True
+    if _generate_two_way_predictions(db, all_events, "btts"):
+        success = True
+
+    return success
 
 
 def generate_all_predictions(db: Session) -> dict:
