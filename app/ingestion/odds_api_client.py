@@ -22,7 +22,10 @@ class OddsApiError(Exception):
     pass
 
 
-def fetch_odds(sport_key: str, regions: str = "eu", markets: str = "h2h") -> list[dict]:
+def fetch_odds(sport_key: str, regions: str = "eu", markets: str = "h2h,totals,btts") -> list[dict]:
+    """Récupère les matchs à venir + cotes pour plusieurs types d'événements
+    (résultat, buts +/-, BTTS) en un seul appel. Coût : 1 crédit par marché
+    demandé x 1 région (3 marchés = 3 crédits par appel)."""
     if not API_KEY:
         raise OddsApiError("ODDS_API_KEY n'est pas configurée (variable d'environnement manquante).")
 
