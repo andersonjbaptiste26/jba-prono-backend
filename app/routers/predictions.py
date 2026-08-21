@@ -33,8 +33,6 @@ def best_predictions(
     min_probability: float = Query(80, ge=0, le=100, description="Seuil de confiance minimum. Objectif produit : 80. Peut être abaissé temporairement pour tester avec moins de données."),
     db: Session = Depends(get_db),
 ):
-    """GET /predictions/best — la page 'Best Picks'. Seuil réglable via min_probability
-    (80 par défaut, l'objectif produit officiel). Exclut toujours les matchs déjà commencés."""
     rows = (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
@@ -42,10 +40,17 @@ def best_predictions(
         .filter(Prediction.probability >= min_probability)
         .filter(Match.kickoff_at >= func.now())
         .order_by(desc(Prediction.probability))
-        .limit(limit)
         .all()
     )
-    return [_serialize(p) for p in rows]
+
+    best_per_match: dict[int, Prediction] = {}
+    for p in rows:
+        match_id = p.event.match_id
+        if match_id not in best_per_match:
+            best_per_match[match_id] = p
+
+    selected = sorted(best_per_match.values(), key=lambda p: p.probability, reverse=True)[:limit]
+    return [_serialize(p) for p in selected]
 
 
 def _serialize(p: Prediction) -> dict:
