@@ -8,8 +8,10 @@ from ..models import Prediction, Event, Match
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
-ODDS_THRESHOLD = 1.35
-OTHER_MARKET_THRESHOLD = 70.0
+SINGLE_RESULT_MAX_ODDS = 1.35
+DOUBLE_CHANCE_MIN_ODDS = 1.09
+DOUBLE_CHANCE_MAX_ODDS = 1.35
+GLOBAL_MIN_PROBABILITY = 65.0
 
 
 @router.get("")
@@ -28,6 +30,43 @@ def list_predictions(
         query = query.filter(Match.kickoff_at >= func.now())
     rows = query.order_by(desc(Prediction.probability)).all()
     return [_serialize(p) for p in rows]
+
+
+def _build_double_chance_candidates(resultat_preds: list[Prediction]) -> list[dict]:
+    by_label_prefix = {}
+    for p in resultat_preds:
+        label = p.event.label
+        if label.startswith("1"):
+            by_label_prefix["1"] = p
+        elif label.startswith("X"):
+            by_label_prefix["X"] = p
+        elif label.startswith("2"):
+            by_label_prefix["2"] = p
+
+    candidates = []
+    if "1" in by_label_prefix and "X" in by_label_prefix:
+        prob = float(by_label_prefix["1"].probability) + float(by_label_prefix["X"].probability)
+        prob = min(prob, 100.0)
+        odds = round(100.0 / prob, 2) if prob > 0 else None
+        candidates.append({
+            "label": "1X — Domicile ou Nul",
+            "probability": round(prob, 2),
+            "odds": odds,
+            "odds_calculee": True,
+            "source_event_id": by_label_prefix["1"].event_id,
+        })
+    if "X" in by_label_prefix and "2" in by_label_prefix:
+        prob = float(by_label_prefix["X"].probability) + float(by_label_prefix["2"].probability)
+        prob = min(prob, 100.0)
+        odds = round(100.0 / prob, 2) if prob > 0 else None
+        candidates.append({
+            "label": "X2 — Nul ou Extérieur",
+            "probability": round(prob, 2),
+            "odds": odds,
+            "odds_calculee": True,
+            "source_event_id": by_label_prefix["2"].event_id,
+        })
+    return candidates
 
 
 @router.get("/best")
@@ -50,31 +89,69 @@ def best_predictions(
     selected = []
     for match_id, preds in by_match.items():
         resultat_preds = [p for p in preds if p.event.type == "resultat"]
-        other_preds = [p for p in preds if p.event.type != "resultat"]
+        buts_preds = [p for p in preds if p.event.type == "buts"]
 
-        best_resultat = max(resultat_preds, key=lambda p: p.probability, default=None)
-        resultat_candidate = None
-        if best_resultat and best_resultat.event.odds_value and float(best_resultat.event.odds_value) > ODDS_THRESHOLD:
-            resultat_candidate = best_resultat
+        candidates = []
 
-        best_other = max(other_preds, key=lambda p: p.probability, default=None)
-        other_candidate = best_other if (best_other and float(best_other.probability) >= OTHER_MARKET_THRESHOLD) else None
+        for p in resultat_preds:
+            if p.event.label.startswith("1") or p.event.label.startswith("2"):
+                if p.event.odds_value and float(p.event.odds_value) <= SINGLE_RESULT_MAX_ODDS:
+                    if float(p.probability) >= GLOBAL_MIN_PROBABILITY:
+                        candidates.append({
+                            "kind": "prediction", "prediction": p,
+                            "probability": float(p.probability),
+                        })
 
-        if resultat_candidate and other_candidate:
-            chosen = other_candidate if other_candidate.probability > resultat_candidate.probability else resultat_candidate
-        elif resultat_candidate:
-            chosen = resultat_candidate
-        elif other_candidate:
-            chosen = other_candidate
+        for dc in _build_double_chance_candidates(resultat_preds):
+            if dc["odds"] and DOUBLE_CHANCE_MIN_ODDS <= dc["odds"] <= DOUBLE_CHANCE_MAX_ODDS:
+                if dc["probability"] >= GLOBAL_MIN_PROBABILITY:
+                    candidates.append({
+                        "kind": "double_chance", "data": dc,
+                        "probability": dc["probability"],
+                    })
+
+        for p in buts_preds:
+            if float(p.probability) >= GLOBAL_MIN_PROBABILITY:
+                candidates.append({
+                    "kind": "prediction", "prediction": p,
+                    "probability": float(p.probability),
+                })
+
+        if not candidates:
+            continue
+
+        best = max(candidates, key=lambda c: c["probability"])
+        selected.append((best, preds[0].event.match))
+
+    selected.sort(key=lambda item: item[1].kickoff_at)
+
+    results = []
+    for candidate, match in selected[:limit]:
+        if candidate["kind"] == "prediction":
+            results.append(_serialize(candidate["prediction"]))
         else:
-            chosen = None
+            dc = candidate["data"]
+            results.append({
+                "prediction_id": None,
+                "event_id": dc["source_event_id"],
+                "match": f"{match.home_team.name} vs {match.away_team.name}",
+                "home_team": match.home_team.name,
+                "away_team": match.away_team.name,
+                "competition": match.competition.name if match.competition else None,
+                "kickoff_at": match.kickoff_at.isoformat(),
+                "event": dc["label"],
+                "event_type": "double_chance",
+                "probability": dc["probability"],
+                "confidence_tier": None,
+                "odds": dc["odds"],
+                "explanation": {
+                    "type_pronostic": dc["label"],
+                    "cote_calculee": True,
+                    "note": "Cote estimée à partir des probabilités 1/X/2 — pas une cote directe de bookmaker.",
+                },
+            })
 
-        if chosen:
-            selected.append(chosen)
-
-    selected.sort(key=lambda p: p.event.match.kickoff_at)
-
-    return [_serialize(p) for p in selected[:limit]]
+    return results
 
 
 def _serialize(p: Prediction) -> dict:
