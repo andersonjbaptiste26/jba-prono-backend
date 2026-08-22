@@ -1,3 +1,4 @@
+from collections import defaultdict
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
@@ -7,6 +8,9 @@ from ..models import Prediction, Event, Match
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
+ODDS_THRESHOLD = 1.35
+OTHER_MARKET_THRESHOLD = 70.0
+
 
 @router.get("")
 def list_predictions(
@@ -14,7 +18,6 @@ def list_predictions(
     only_upcoming: bool = Query(True, description="Exclut les matchs déjà commencés/joués."),
     db: Session = Depends(get_db),
 ):
-    """GET /predictions — toutes les prédictions, filtrables par probabilité min."""
     query = (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
@@ -29,28 +32,49 @@ def list_predictions(
 
 @router.get("/best")
 def best_predictions(
-    limit: int = 10,
-    min_probability: float = Query(80, ge=0, le=100, description="Seuil de confiance minimum. Objectif produit : 80. Peut être abaissé temporairement pour tester avec moins de données."),
+    limit: int = 20,
     db: Session = Depends(get_db),
 ):
     rows = (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
         .join(Match, Event.match_id == Match.id)
-        .filter(Prediction.probability >= min_probability)
         .filter(Match.kickoff_at >= func.now())
-        .order_by(desc(Prediction.probability))
         .all()
     )
 
-    best_per_match: dict[int, Prediction] = {}
+    by_match = defaultdict(list)
     for p in rows:
-        match_id = p.event.match_id
-        if match_id not in best_per_match:
-            best_per_match[match_id] = p
+        by_match[p.event.match_id].append(p)
 
-    selected = sorted(best_per_match.values(), key=lambda p: p.probability, reverse=True)[:limit]
-    return [_serialize(p) for p in selected]
+    selected = []
+    for match_id, preds in by_match.items():
+        resultat_preds = [p for p in preds if p.event.type == "resultat"]
+        other_preds = [p for p in preds if p.event.type != "resultat"]
+
+        best_resultat = max(resultat_preds, key=lambda p: p.probability, default=None)
+        resultat_candidate = None
+        if best_resultat and best_resultat.event.odds_value and float(best_resultat.event.odds_value) > ODDS_THRESHOLD:
+            resultat_candidate = best_resultat
+
+        best_other = max(other_preds, key=lambda p: p.probability, default=None)
+        other_candidate = best_other if (best_other and float(best_other.probability) >= OTHER_MARKET_THRESHOLD) else None
+
+        if resultat_candidate and other_candidate:
+            chosen = other_candidate if other_candidate.probability > resultat_candidate.probability else resultat_candidate
+        elif resultat_candidate:
+            chosen = resultat_candidate
+        elif other_candidate:
+            chosen = other_candidate
+        else:
+            chosen = None
+
+        if chosen:
+            selected.append(chosen)
+
+    selected.sort(key=lambda p: p.event.match.kickoff_at)
+
+    return [_serialize(p) for p in selected[:limit]]
 
 
 def _serialize(p: Prediction) -> dict:
@@ -65,6 +89,7 @@ def _serialize(p: Prediction) -> dict:
         "competition": match.competition.name if match and match.competition else None,
         "kickoff_at": match.kickoff_at.isoformat() if match else None,
         "event": event.label if event else None,
+        "event_type": event.type if event else None,
         "probability": float(p.probability),
         "confidence_tier": p.confidence_tier,
         "odds": float(event.odds_value) if event and event.odds_value else None,
