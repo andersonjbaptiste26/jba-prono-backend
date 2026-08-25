@@ -140,5 +140,57 @@ class Odds(Base):
 class User(Base):
     __tablename__ = "users"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, unique=True)
+    email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    display_name = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
+
+class Bet(Base):
+    __tablename__ = "bets"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    stake = Column(Numeric(10, 2), nullable=True)
+    total_odds = Column(Numeric(8, 3), nullable=False)
+    potential_gain = Column(Numeric(10, 2), nullable=True)
+    status = Column(String, default="en_cours")
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    settled_at = Column(TIMESTAMP(timezone=True))
+
+    selections = relationship("BetSelection", back_populates="bet")
+
+
+class BetSelection(Base):
+    __tablename__ = "bet_selections"
+    id = Column(Integer, primary_key=True)
+    bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"))
+    event_id = Column(Integer, ForeignKey("events.id"))
+    odds_value = Column(Numeric(6, 2), nullable=False)
+    probability_at_bet = Column(Numeric(5, 2))
+    result = Column(String, nullable=True)
+
+    bet = relationship("Bet", back_populates="selections")
+    event = relationship("Event")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"), nullable=True)
+    message = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    read = Column(Boolean, default=False)
+
+
+class DailyNote(Base):
+    __tablename__ = "daily_notes"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    date = Column(Date, server_default=func.current_date())
+    capital_investissement = Column(Numeric(12, 2))
+    bet_trade = Column(Numeric(12, 2))
+    bet_statut = Column(String)
+    argent = Column(Numeric(12, 2))
+    notebook = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
