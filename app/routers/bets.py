@@ -17,7 +17,6 @@ class SelectionIn(BaseModel):
 
 class BetIn(BaseModel):
     user_id: str
-    stake: float
     selections: List[SelectionIn]
 
 
@@ -42,6 +41,9 @@ def _get_or_create_anonymous_user(db: Session, user_id: str) -> str:
 
 @router.post("")
 def create_bet(payload: BetIn, db: Session = Depends(get_db)):
+    """POST /bets — construit le panier et calcule la cote totale combinée.
+    Pas de montant d'argent : uniquement le suivi des sélections et de la
+    cote, pour la simulation."""
     user_id = _get_or_create_anonymous_user(db, payload.user_id)
 
     events = db.query(Event).filter(Event.id.in_([s.event_id for s in payload.selections])).all()
@@ -50,13 +52,12 @@ def create_bet(payload: BetIn, db: Session = Depends(get_db)):
 
     odds_values = [float(e.odds_value) for e in events]
     total_odds = prod(odds_values) if odds_values else 1.0
-    potential_gain = round(payload.stake * total_odds, 2)
 
     bet = Bet(
         user_id=user_id,
-        stake=payload.stake,
+        stake=None,
         total_odds=round(total_odds, 3),
-        potential_gain=potential_gain,
+        potential_gain=None,
         status="en_cours",
     )
     db.add(bet)
@@ -69,34 +70,35 @@ def create_bet(payload: BetIn, db: Session = Depends(get_db)):
     return {
         "bet_id": str(bet.id),
         "total_odds": float(bet.total_odds),
-        "stake": float(bet.stake),
-        "potential_gain": float(bet.potential_gain),
-        "potential_profit": round(potential_gain - payload.stake, 2),
+        "selections_count": len(events),
     }
 
 
 @router.get("/history")
 def bet_history(user_id: str, db: Session = Depends(get_db)):
+    """GET /bets/history — historique + statistiques, sans montants d'argent."""
     bets = db.query(Bet).filter(Bet.user_id == user_id).order_by(Bet.created_at.desc()).all()
 
     total = len(bets)
     won = len([b for b in bets if b.status == "gagne"])
     lost = len([b for b in bets if b.status == "perdu"])
-    total_stake = sum(float(b.stake) for b in bets)
-    profit = sum(
-        (float(b.potential_gain) - float(b.stake)) if b.status == "gagne" else -float(b.stake)
-        for b in bets if b.status in ("gagne", "perdu")
-    )
 
     return {
         "bets": [
             {
                 "id": str(b.id),
-                "stake": float(b.stake),
                 "total_odds": float(b.total_odds),
-                "potential_gain": float(b.potential_gain),
                 "status": b.status,
                 "created_at": b.created_at.isoformat(),
+                "selections": [
+                    {
+                        "match": f"{s.event.match.home_team.name} vs {s.event.match.away_team.name}" if s.event and s.event.match else None,
+                        "event": s.event.label if s.event else None,
+                        "odds": float(s.odds_value),
+                        "result": s.result,
+                    }
+                    for s in b.selections
+                ],
             }
             for b in bets
         ],
@@ -104,8 +106,7 @@ def bet_history(user_id: str, db: Session = Depends(get_db)):
             "total_bets": total,
             "won": won,
             "lost": lost,
+            "en_cours": total - won - lost,
             "success_rate": round((won / (won + lost) * 100), 1) if (won + lost) > 0 else 0,
-            "total_stake": total_stake,
-            "profit": round(profit, 2),
         },
     }
