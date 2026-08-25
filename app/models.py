@@ -1,5 +1,4 @@
 import uuid
-# rebuild trigger
 from sqlalchemy import (
     Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date, ForeignKey, JSON, func
 )
@@ -8,6 +7,7 @@ from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
+
 class Season(Base):
     __tablename__ = "seasons"
     id = Column(Integer, primary_key=True)
@@ -15,7 +15,8 @@ class Season(Base):
     label = Column(String)
     start_date = Column(Date)
     end_date = Column(Date)
-    
+
+
 class League(Base):
     __tablename__ = "leagues"
     id = Column(Integer, primary_key=True)
@@ -60,39 +61,10 @@ class Match(Base):
 
     home_team = relationship("Team", foreign_keys=[home_team_id])
     away_team = relationship("Team", foreign_keys=[away_team_id])
-    events = relationship("Event", back_populates="match")
     competition = relationship("Competition")
-
-class TeamStatistics(Base):
-    __tablename__ = "team_statistics"
-    id = Column(Integer, primary_key=True)
-    team_id = Column(Integer, ForeignKey("teams.id"))
-    competition_id = Column(Integer, ForeignKey("competitions.id"), nullable=True)
-    season_id = Column(Integer, ForeignKey("seasons.id"), nullable=True)
-    matches_played = Column(Integer, default=0)
-    wins = Column(Integer, default=0)
-    draws = Column(Integer, default=0)
-    losses = Column(Integer, default=0)
-    goals_for = Column(Integer, default=0)
-    goals_against = Column(Integer, default=0)
-    clean_sheets = Column(Integer, default=0)
-    btts_count = Column(Integer, default=0)
-    form_last5 = Column(String)
-    home_wins = Column(Integer, default=0)
-    away_wins = Column(Integer, default=0)
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    events = relationship("Event", back_populates="match")
 
 
-class Odds(Base):
-    __tablename__ = "odds"
-    id = Column(Integer, primary_key=True)
-    match_id = Column(Integer, ForeignKey("matches.id"))
-    market = Column(String, nullable=False)
-    selection = Column(String, nullable=False)
-    value = Column(Numeric(6, 2), nullable=False)
-    source = Column(String)
-    fetched_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    
 class Event(Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True)
@@ -134,35 +106,38 @@ class TeamRating(Base):
     computed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
+class TeamStatistics(Base):
+    __tablename__ = "team_statistics"
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey("teams.id"))
+    competition_id = Column(Integer, ForeignKey("competitions.id"), nullable=True)
+    season_id = Column(Integer, ForeignKey("seasons.id"), nullable=True)
+    matches_played = Column(Integer, default=0)
+    wins = Column(Integer, default=0)
+    draws = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    goals_for = Column(Integer, default=0)
+    goals_against = Column(Integer, default=0)
+    clean_sheets = Column(Integer, default=0)
+    btts_count = Column(Integer, default=0)
+    form_last5 = Column(String)
+    home_wins = Column(Integer, default=0)
+    away_wins = Column(Integer, default=0)
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+class Odds(Base):
+    __tablename__ = "odds"
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("matches.id"))
+    market = Column(String, nullable=False)
+    selection = Column(String, nullable=False)
+    value = Column(Numeric(6, 2), nullable=False)
+    source = Column(String)
+    fetched_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
 class User(Base):
     __tablename__ = "users"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    display_name = Column(String)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-
-
-class Bet(Base):
-    __tablename__ = "bets"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    stake = Column(Numeric(10, 2), nullable=False)
-    total_odds = Column(Numeric(8, 3), nullable=False)
-    potential_gain = Column(Numeric(10, 2), nullable=False)
-    status = Column(String, default="en_cours")
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    settled_at = Column(TIMESTAMP(timezone=True))
-
-    selections = relationship("BetSelection", back_populates="bet")
-
-
-class BetSelection(Base):
-    __tablename__ = "bet_selections"
-    id = Column(Integer, primary_key=True)
-    bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"))
-    event_id = Column(Integer, ForeignKey("events.id"))
-    odds_value = Column(Numeric(6, 2), nullable=False)
-    probability_at_bet = Column(Numeric(5, 2))
-
-    bet = relationship("Bet", back_populates="selections")
+    email = Column(String, unique
