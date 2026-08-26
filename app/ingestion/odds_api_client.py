@@ -11,6 +11,10 @@ LEAGUE_KEYS = {
     "soccer_germany_bundesliga": "Bundesliga",
     "soccer_france_ligue_one": "Ligue 1",
     "soccer_uefa_champs_league": "Champions League",
+    "soccer_netherlands_eredivisie": "Eredivisie",
+    "soccer_portugal_primeira_liga": "Primeira Liga",
+    "soccer_efl_champ": "EFL Championship",
+    "soccer_brazil_campeonato": "Brasileirão",
 }
 
 
