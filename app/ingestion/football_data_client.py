@@ -7,8 +7,9 @@ API_KEY = os.getenv("FOOTBALL_DATA_API_KEY", "")
 COMPETITION_CODES = {
     "Premier League": "PL", "La Liga": "PD", "Bundesliga": "BL1",
     "Serie A": "SA", "Ligue 1": "FL1", "Champions League": "CL",
+    "Eredivisie": "DED", "Primeira Liga": "PPL",
+    "EFL Championship": "ELC", "Brasileirão": "BSA",
 }
-
 
 class FootballDataError(Exception):
     pass
