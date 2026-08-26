@@ -183,6 +183,15 @@ class Notification(Base):
     read = Column(Boolean, default=False)
 
 
+class InvitationCode(Base):
+    __tablename__ = "invitation_codes"
+    id = Column(Integer, primary_key=True)
+    code = Column(String, unique=True, nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    label = Column(String, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    used_at = Column(TIMESTAMP(timezone=True), nullable=True)
+
 class DailyNote(Base):
     __tablename__ = "daily_notes"
     id = Column(Integer, primary_key=True)
