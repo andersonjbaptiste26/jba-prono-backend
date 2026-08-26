@@ -1,12 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import matches, predictions, teams, bets, admin, notifications, notes
+from .routers import matches, predictions, teams, bets, admin, notes, auth
 
 app = FastAPI(
     title="JBa Prono API",
     description="Backend d'analyse statistique et prédictive des matchs de football.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -29,8 +29,8 @@ app.include_router(predictions.router)
 app.include_router(teams.router)
 app.include_router(bets.router)
 app.include_router(admin.router)
-app.include_router(notifications.router)
 app.include_router(notes.router)
+app.include_router(auth.router)
 
 
 @app.get("/")
