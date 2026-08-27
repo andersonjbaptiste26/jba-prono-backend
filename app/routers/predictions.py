@@ -83,15 +83,23 @@ def best_predictions(
     for match_id, preds in by_match.items():
         best = max(preds, key=lambda p: p.probability)
 
+        # 1. Si la meilleure prédiction dépasse le seuil principal (>= 66%)
         if float(best.probability) >= MAIN_THRESHOLD:
             selected.append(("normal", best, None))
             continue
 
-        if best.event.type == "resultat" and FALLBACK_MIN <= float(best.probability) < FALLBACK_MAX:
-            resultat_preds = [p for p in preds if p.event.type == "resultat"]
+        # 2. Vérification de la tranche 55% - 66% pour appliquer le Double Chance sur le marché "resultat"
+        resultat_preds = [p for p in preds if p.event.type == "resultat"]
+        best_resultat = max(resultat_preds, key=lambda p: p.probability) if resultat_preds else None
+
+        if best_resultat and FALLBACK_MIN <= float(best_resultat.probability) < FALLBACK_MAX:
             dc = _build_double_chance(resultat_preds)
             if dc:
                 selected.append(("double_chance", dc["source_pred"], dc))
+                continue
+
+        # Fallback par défaut si aucune condition n'est remplie mais qu'on veut afficher le best
+        selected.append(("normal", best, None))
 
     selected.sort(key=lambda item: item[1].event.match.kickoff_at)
 
@@ -104,6 +112,8 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
     buts_probables = get_expected_goals_line(match) if match else None
 
     if double_chance:
+        # On passe aussi les buts probables au résumé pour le double chance
+        human_pourquoi = build_human_summary(event, p, match, buts_probables=buts_probables)
         return {
             "prediction_id": p.id,
             "event_id": event.id if event else None,
@@ -118,11 +128,7 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
             "confidence_tier": None,
             "odds": double_chance["odds"],
             "buts_probables": buts_probables,
-            "pourquoi": (
-                f"Ce match ne se dégage pas assez nettement pour miser sur une victoire sèche, "
-                f"mais en couvrant deux issues sur trois, la probabilité de réussite grimpe à "
-                f"{double_chance['probability']:.0f}% — un pari plus sûr, pour une cote plus modeste."
-            ),
+            "pourquoi": human_pourquoi,
             "explanation": {"cote_calculee": True, "note": "Cote estimée, pas une cote directe de bookmaker."},
         }
 
@@ -140,6 +146,6 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
         "confidence_tier": p.confidence_tier,
         "odds": float(event.odds_value) if event and event.odds_value else None,
         "buts_probables": buts_probables,
-        "pourquoi": build_human_summary(event, p, match) if match else None,
+        "pourquoi": build_human_summary(event, p, match, buts_probables=buts_probables) if match else None,
         "explanation": p.explanation,
     }
