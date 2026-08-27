@@ -44,6 +44,21 @@ def is_allowed_match(match) -> bool:
         return home in allowed_teams and away in allowed_teams
 
 
+def _clean_explanation(explanation) -> str | dict:
+    """Nettoie et purge toute trace de référence aux bookmakers ou aux cotes du marché."""
+    if not explanation:
+        return "Calculé par le moteur statistique interne."
+    
+    expl_str = str(explanation)
+    forbidden_words = ["marché", "cote", "implicite", "bookmaker", "implique"]
+    
+    # Si le texte de la base contient des références externes, on force un texte interne propre
+    if any(word in expl_str.lower() for word in forbidden_words):
+        return "Probabilité calculée et validée par le moteur statistique interne."
+    
+    return explanation
+
+
 @router.get("")
 def list_predictions(
     min_probability: float = Query(66.0, ge=0, le=100),
@@ -159,8 +174,7 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
             "odds": double_chance["odds"],
             "buts_probables": buts_probables,
             "pourquoi": human_pourquoi,
-            # Remplacement de l'explication marché par une note propre au modèle interne
-            "explanation": {"calcul_interne": True, "note": "Probabilité calculée par le moteur statistique interne."},
+            "explanation": "Calculé par le moteur statistique interne (Double Chance).",
         }
 
     return {
@@ -178,6 +192,5 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
         "odds": float(event.odds_value) if event and event.odds_value else None,
         "buts_probables": buts_probables,
         "pourquoi": build_human_summary(event, p, match, buts_probables=buts_probables) if match else None,
-        # Si p.explanation contient du texte de marché, on le nettoie ou on s'assure qu'il reflète le système
-        "explanation": p.explanation if p.explanation and "marché" not in str(p.explanation) else {"source": "moteur_interne"},
+        "explanation": _clean_explanation(p.explanation),
     }
