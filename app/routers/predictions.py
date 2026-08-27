@@ -13,7 +13,7 @@ MAIN_THRESHOLD = 66.0
 FALLBACK_MIN = 55.0
 FALLBACK_MAX = 66.0
 
-# Whitelist exacte des championnats et des équipes autorisées (Update #1)
+# Whitelist exacte des championnats et des équipes autorisées
 ALLOWED_TEAMS_BY_COMPETITION = {
     "Premier League": ["Arsenal", "Manchester City", "Manchester United", "Aston Villa"],
     "La Liga": ["FC Barcelone", "Real Madrid", "Villarreal", "Atlético de Madrid"],
@@ -128,7 +128,7 @@ def best_predictions(
 
         if best_resultat and FALLBACK_MIN <= float(best_resultat.probability) < FALLBACK_MAX:
             dc = _build_double_chance(resultat_preds)
-            # On ne retient le double chance QUE si sa nouvelle probabilité calculée est strictement > 66%
+            # Retenu uniquement si la nouvelle probabilité calculée par le système dépasse 66%
             if dc and dc["probability"] > MAIN_THRESHOLD:
                 selected.append(("double_chance", dc["source_pred"], dc))
 
@@ -159,7 +159,8 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
             "odds": double_chance["odds"],
             "buts_probables": buts_probables,
             "pourquoi": human_pourquoi,
-            "explanation": {"cote_calculee": True, "note": "Cote estimée, pas une cote directe de bookmaker."},
+            # Remplacement de l'explication marché par une note propre au modèle interne
+            "explanation": {"calcul_interne": True, "note": "Probabilité calculée par le moteur statistique interne."},
         }
 
     return {
@@ -172,10 +173,11 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
         "kickoff_at": match.kickoff_at.isoformat() if match else None,
         "event": event.label if event else None,
         "event_type": event.type if event else None,
-        "probability": float(p.probability),  # Probabilité pure et fiable du modèle
+        "probability": float(p.probability),
         "confidence_tier": p.confidence_tier,
         "odds": float(event.odds_value) if event and event.odds_value else None,
         "buts_probables": buts_probables,
         "pourquoi": build_human_summary(event, p, match, buts_probables=buts_probables) if match else None,
-        "explanation": p.explanation,
+        # Si p.explanation contient du texte de marché, on le nettoie ou on s'assure qu'il reflète le système
+        "explanation": p.explanation if p.explanation and "marché" not in str(p.explanation) else {"source": "moteur_interne"},
     }
