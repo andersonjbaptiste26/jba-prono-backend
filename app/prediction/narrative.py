@@ -4,7 +4,6 @@ def build_human_summary(event, prediction, match, buts_probables: float = None) 
     explanation = prediction.explanation or {}
     pct = round(float(prediction.probability))
     
-    # Construction de la base textuelle selon le type d'événement
     if event.type == "resultat":
         if event.label.startswith("1"):
             favori = match.home_team.name
@@ -26,31 +25,29 @@ def build_human_summary(event, prediction, match, buts_probables: float = None) 
 
                 if favori and plus_fort == favori:
                     text = (
-                        f"{favori} se présente en position de force : nos statistiques "
-                        f"d'équipe et les cotes des bookmakers pointent dans la même direction. "
-                        f"On estime {pct}% de chances que ce scénario se réalise."
+                        f"{favori} se présente en position de force selon notre modèle statistique "
+                        f"et l'évaluation des performances d'équipe. "
+                        f"Notre système estime à {pct}% la probabilité de réalisation de ce scénario."
                     )
                 elif favori:
                     text = (
-                        f"Le marché des paris favorise nettement {favori} ({pct}% de chances "
-                        f"estimées), même si l'écart de niveau entre les deux équipes reste modéré "
-                        f"sur le papier."
+                        f"Notre moteur de prédiction favorise {favori} ({pct}% de probabilité calculée), "
+                        f"malgré un écart de niveau modéré entre les deux formations."
                     )
                 else:
                     text = (
-                        f"Un match plutôt équilibré entre les deux équipes, où le match nul "
+                        f"Rencontre très équilibrée selon nos analyses internes, où le match nul "
                         f"ressort comme l'issue la plus probable ({pct}%)."
                     )
             else:
-                text = f"Probabilité estimée pour ce résultat : {pct}%."
+                text = f"Probabilité calculée par notre système pour ce résultat : {pct}%."
         elif favori:
             text = (
-                f"Les bookmakers placent {favori} largement favori pour ce match, "
-                f"avec une probabilité implicite de {pct}%. Les statistiques d'équipe "
-                f"détaillées ne sont pas encore disponibles pour ce championnat."
+                f"Notre modèle statistique place {favori} en tête pour cette rencontre, "
+                f"avec une probabilité interne de {pct}%."
             )
         else:
-            text = f"Le marché des paris considère le match nul comme l'issue la plus probable ({pct}%)."
+            text = f"Notre modèle statistique considère le match nul comme l'issue la plus probable ({pct}%)."
 
     elif event.type == "buts":
         going_over = event.label.startswith("+")
@@ -58,26 +55,24 @@ def build_human_summary(event, prediction, match, buts_probables: float = None) 
         line = line_match.group(1) if line_match else "?"
         if going_over:
             text = (
-                f"Les bookmakers anticipent un match plutôt ouvert, avec de nombreuses occasions "
-                f"de but. Il y a {pct}% de chances que les deux équipes marquent plus de {line} "
-                f"buts au total."
+                f"Notre modèle anticipe une rencontre ouverte d'après l'historique des équipes. "
+                f"Il y a {pct}% de probabilité que le total dépasse {line} buts."
             )
         else:
             text = (
-                f"Les bookmakers anticipent un match plutôt fermé, avec peu d'occasions franches. "
-                f"Il y a {pct}% de chances que le total de buts reste sous la barre des {line}."
+                f"Notre modèle anticipe une rencontre fermée d'après l'historique des équipes. "
+                f"Il y a {pct}% de probabilité que le total reste sous la barre des {line} buts."
             )
 
     elif event.type == "double_chance":
         text = (
-            f"Ce match ne se dégage pas assez nettement pour miser sur une victoire sèche, "
-            f"mais en couvrant deux issues sur trois (victoire ou match nul), la probabilité "
-            f"de réussite grimpe à {pct}% — un pari plus sûr, pour une cote plus modeste."
+            f"L'analyse de notre système ne dégage pas un vainqueur net pour une victoire sèche, "
+            f"mais en combinant deux issues (victoire ou match nul), la probabilité calculée "
+            f"par notre algorithme atteint {pct}% — offrant une option plus sécurisée."
         )
     else:
-        text = f"Probabilité estimée : {pct}%."
+        text = f"Probabilité estimée par le système : {pct}%."
 
-    # Ajout automatique du nombre de buts probable dans la même section "Pourquoi"
     if buts_probables is not None:
         text += f" Nombre de buts probable estimé : {buts_probables}."
 
