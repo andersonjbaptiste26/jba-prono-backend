@@ -13,10 +13,40 @@ MAIN_THRESHOLD = 66.0
 FALLBACK_MIN = 55.0
 FALLBACK_MAX = 66.0
 
+# Whitelist exacte des championnats et des équipes autorisées (Update #1)
+ALLOWED_TEAMS_BY_COMPETITION = {
+    "Premier League": ["Arsenal", "Manchester City", "Manchester United", "Aston Villa"],
+    "La Liga": ["FC Barcelone", "Real Madrid", "Villarreal", "Atlético de Madrid"],
+    "Bundesliga": ["Bayern Munich", "Borussia Dortmund", "RB Leipzig", "VfB Stuttgart"],
+    "Serie A": ["Inter Milan", "Napoli", "AS Roma", "Como 1907"],
+    "Ligue 1": ["Paris Saint-Germain", "RC Lens", "LOSC Lille", "Olympique Lyonnais"],
+    "Eredivisie": ["PSV Eindhoven", "Feyenoord", "NEC Nimègue", "FC Twente"],
+    "Primeira Liga": ["FC Porto", "Sporting CP", "SL Benfica", "SC Braga"],
+    "EFL Championship": ["Coventry City", "Ipswich Town", "Millwall", "Southampton"],
+    "Campeonato Brasileiro Série A": ["Flamengo", "Palmeiras", "Cruzeiro", "Mirassol"],
+    "Ligue des champions UEFA": ["Paris Saint-Germain", "Arsenal", "Bayern Munich", "Atlético de Madrid"]
+}
+
+def is_allowed_match(match) -> bool:
+    if not match or not match.competition or not match.home_team or not match.away_team:
+        return False
+    comp_name = match.competition.name
+    allowed_teams = ALLOWED_TEAMS_BY_COMPETITION.get(comp_name)
+    if not allowed_teams:
+        return False
+    
+    home = match.home_team.name
+    away = match.away_team.name
+    
+    if comp_name == "Ligue des champions UEFA":
+        return home in allowed_teams or away in allowed_teams
+    else:
+        return home in allowed_teams and away in allowed_teams
+
 
 @router.get("")
 def list_predictions(
-    min_probability: float = Query(0, ge=0, le=100),
+    min_probability: float = Query(66.0, ge=0, le=100),
     only_upcoming: bool = Query(True, description="Exclut les matchs déjà commencés/joués."),
     db: Session = Depends(get_db),
 ):
@@ -29,7 +59,9 @@ def list_predictions(
     if only_upcoming:
         query = query.filter(Match.kickoff_at >= func.now())
     rows = query.order_by(desc(Prediction.probability)).all()
-    return [_serialize(p) for p in rows]
+    
+    filtered_rows = [p for p in rows if is_allowed_match(p.event.match if p.event else None)]
+    return [_serialize(p) for p in filtered_rows]
 
 
 def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
@@ -77,29 +109,28 @@ def best_predictions(
 
     by_match = defaultdict(list)
     for p in rows:
-        by_match[p.event.match_id].append(p)
+        match = p.event.match if p.event else None
+        if is_allowed_match(match):
+            by_match[match.id].append(p)
 
     selected = []
     for match_id, preds in by_match.items():
         best = max(preds, key=lambda p: p.probability)
 
-        # 1. Si la meilleure prédiction dépasse le seuil principal (>= 66%)
+        # 1. Si la meilleure prédiction directe dépasse ou égale 66%
         if float(best.probability) >= MAIN_THRESHOLD:
             selected.append(("normal", best, None))
             continue
 
-        # 2. Vérification de la tranche 55% - 66% pour appliquer le Double Chance sur le marché "resultat"
+        # 2. Si elle est entre 55% et 66% sur le marché "resultat", on applique le Double Chance
         resultat_preds = [p for p in preds if p.event.type == "resultat"]
         best_resultat = max(resultat_preds, key=lambda p: p.probability) if resultat_preds else None
 
         if best_resultat and FALLBACK_MIN <= float(best_resultat.probability) < FALLBACK_MAX:
             dc = _build_double_chance(resultat_preds)
-            if dc:
+            # On ne retient le double chance QUE si sa nouvelle probabilité calculée est strictement > 66%
+            if dc and dc["probability"] > MAIN_THRESHOLD:
                 selected.append(("double_chance", dc["source_pred"], dc))
-                continue
-
-        # Fallback par défaut si aucune condition n'est remplie mais qu'on veut afficher le best
-        selected.append(("normal", best, None))
 
     selected.sort(key=lambda item: item[1].event.match.kickoff_at)
 
@@ -112,7 +143,6 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
     buts_probables = get_expected_goals_line(match) if match else None
 
     if double_chance:
-        # On passe aussi les buts probables au résumé pour le double chance
         human_pourquoi = build_human_summary(event, p, match, buts_probables=buts_probables)
         return {
             "prediction_id": p.id,
@@ -142,7 +172,7 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
         "kickoff_at": match.kickoff_at.isoformat() if match else None,
         "event": event.label if event else None,
         "event_type": event.type if event else None,
-        "probability": float(p.probability),
+        "probability": float(p.probability),  # Probabilité pure et fiable du modèle
         "confidence_tier": p.confidence_tier,
         "odds": float(event.odds_value) if event and event.odds_value else None,
         "buts_probables": buts_probables,
