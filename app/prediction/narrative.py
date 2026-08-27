@@ -1,14 +1,10 @@
-"""
-Génère des explications en langage naturel pour "Pourquoi ce pronostic ?",
-à partir des données techniques déjà calculées par le moteur de prédiction.
-"""
 import re
 
-
-def build_human_summary(event, prediction, match) -> str:
+def build_human_summary(event, prediction, match, buts_probables: float = None) -> str:
     explanation = prediction.explanation or {}
     pct = round(float(prediction.probability))
-
+    
+    # Construction de la base textuelle selon le type d'événement
     if event.type == "resultat":
         if event.label.startswith("1"):
             favori = match.home_team.name
@@ -29,56 +25,63 @@ def build_human_summary(event, prediction, match) -> str:
                     plus_fort = None
 
                 if favori and plus_fort == favori:
-                    return (
+                    text = (
                         f"{favori} se présente en position de force : nos statistiques "
                         f"d'équipe et les cotes des bookmakers pointent dans la même direction. "
                         f"On estime {pct}% de chances que ce scénario se réalise."
                     )
                 elif favori:
-                    return (
+                    text = (
                         f"Le marché des paris favorise nettement {favori} ({pct}% de chances "
                         f"estimées), même si l'écart de niveau entre les deux équipes reste modéré "
                         f"sur le papier."
                     )
                 else:
-                    return (
+                    text = (
                         f"Un match plutôt équilibré entre les deux équipes, où le match nul "
                         f"ressort comme l'issue la plus probable ({pct}%)."
                     )
-        if favori:
-            return (
+            else:
+                text = f"Probabilité estimée pour ce résultat : {pct}%."
+        elif favori:
+            text = (
                 f"Les bookmakers placent {favori} largement favori pour ce match, "
                 f"avec une probabilité implicite de {pct}%. Les statistiques d'équipe "
                 f"détaillées ne sont pas encore disponibles pour ce championnat."
             )
-        return (
-            f"Le marché des paris considère le match nul comme l'issue la plus probable "
-            f"({pct}% de chances estimées)."
-        )
+        else:
+            text = f"Le marché des paris considère le match nul comme l'issue la plus probable ({pct}%)."
 
-    if event.type == "buts":
+    elif event.type == "buts":
         going_over = event.label.startswith("+")
         line_match = re.search(r"([\d.]+)", event.label)
         line = line_match.group(1) if line_match else "?"
         if going_over:
-            return (
+            text = (
                 f"Les bookmakers anticipent un match plutôt ouvert, avec de nombreuses occasions "
                 f"de but. Il y a {pct}% de chances que les deux équipes marquent plus de {line} "
                 f"buts au total."
             )
-        return (
-            f"Les bookmakers anticipent un match plutôt fermé, avec peu d'occasions franches. "
-            f"Il y a {pct}% de chances que le total de buts reste sous la barre des {line}."
-        )
+        else:
+            text = (
+                f"Les bookmakers anticipent un match plutôt fermé, avec peu d'occasions franches. "
+                f"Il y a {pct}% de chances que le total de buts reste sous la barre des {line}."
+            )
 
-    if event.type == "double_chance":
-        return (
+    elif event.type == "double_chance":
+        text = (
             f"Ce match ne se dégage pas assez nettement pour miser sur une victoire sèche, "
             f"mais en couvrant deux issues sur trois (victoire ou match nul), la probabilité "
             f"de réussite grimpe à {pct}% — un pari plus sûr, pour une cote plus modeste."
         )
+    else:
+        text = f"Probabilité estimée : {pct}%."
 
-    return f"Probabilité estimée : {pct}%."
+    # Ajout automatique du nombre de buts probable dans la même section "Pourquoi"
+    if buts_probables is not None:
+        text += f" Nombre de buts probable estimé : {buts_probables}."
+
+    return text
 
 
 def get_expected_goals_line(match) -> float | None:
