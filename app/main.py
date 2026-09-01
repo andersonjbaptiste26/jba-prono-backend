@@ -41,3 +41,23 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@app.get("/insights/best-day")
+def get_best_day_insights():
+    return {
+        "status": "success",
+        "best_day": {
+            "date": "Mercredi 2 Septembre 2026",
+            "total_matches": 1,
+            "matches": [
+                {
+                    "home_team": "Flamengo",
+                    "away_team": "Mirassol",
+                    "league": "Brasileirão",
+                    "time": "18:30",
+                    "status": "78% - 1X"
+                }
+            ]
+        }
+    }
