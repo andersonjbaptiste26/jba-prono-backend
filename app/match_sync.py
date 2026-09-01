@@ -7,7 +7,6 @@ import logging
 import psycopg2
 import psycopg2.extras
 
-# Configuration d'un logger pour forcer l'affichage immédiat dans les logs Railway
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("match_sync")
 
@@ -20,7 +19,6 @@ def get_db_connection():
 def sync_teams_and_fetch_matches_to_neon():
     logger.info("Début de la synchronisation des matchs via Groq...")
     try:
-        # 1. Récupération des équipes depuis Neon
         conn = get_db_connection()
         cur = conn.cursor()
         
@@ -37,7 +35,6 @@ def sync_teams_and_fetch_matches_to_neon():
         for row in db_teams:
             teams_summary.append(f"- {row['team_name']} ({row['league']}, {row['country']})")
 
-        # Sélection d'un lot d'équipes pour l'appel IA
         teams_str = "\n".join(teams_summary[:40])
         today_str = datetime.now().strftime("%Y-%m-%d")
         end_date_str = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
@@ -51,7 +48,6 @@ def sync_teams_and_fetch_matches_to_neon():
 
         logger.info(f"Envoi de la requête à Groq pour {min(len(db_teams), 40)} équipes...")
 
-        # 2. Requête vers l'API Groq (Llama 3.3)
         prompt = f"""
         Aujourd'hui nous sommes le {today_str}. Donne les matchs officiels de football prévus entre le {today_str} et le {end_date_str} pour ces équipes :
         {teams_str}
@@ -81,13 +77,17 @@ def sync_teams_and_fetch_matches_to_neon():
             "temperature": 0.1
         }
 
+        # Ajout d'un User-Agent de navigateur pour contourner le blocage Cloudflare (Erreur 1010)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+
         req = urllib.request.Request(
             url,
             data=bytes(json.dumps(payload), encoding="utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            },
+            headers=headers,
             method="POST"
         )
 
@@ -125,7 +125,6 @@ def sync_teams_and_fetch_matches_to_neon():
 
         logger.info(f"{len(matches_list)} matchs reçus de l'IA. Insertion dans Neon...")
 
-        # 3. Insertion SQL dans Neon
         cur.execute("DELETE FROM matches_cache WHERE match_date < CURRENT_DATE;")
 
         for m in matches_list:
