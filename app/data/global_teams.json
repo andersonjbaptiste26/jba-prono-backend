@@ -1,0 +1,222 @@
+   {
+    "Angleterre": {
+      "championnat": "Premier League",
+      "equipes": ["Arsenal", "Manchester City", "Manchester United"]
+    },
+    "Espagne": {
+      "championnat": "La Liga",
+      "equipes": ["FC Barcelona", "Real Madrid", "Villarreal"]
+    },
+    "Italie": {
+      "championnat": "Serie A",
+      "equipes": ["Inter Milan", "Napoli", "AS Roma"]
+    },
+    "Allemagne": {
+      "championnat": "Bundesliga",
+      "equipes": ["Bayern Munich", "Borussia Dortmund", "RB Leipzig"]
+    },
+    "France": {
+      "championnat": "Ligue 1",
+      "equipes": ["Paris Saint-Germain", "RC Lens", "LOSC Lille"]
+    },
+    "Portugal": {
+      "championnat": "Primeira Liga",
+      "equipes": ["FC Porto", "Sporting CP", "Benfica"]
+    },
+    "Pays-Bas": {
+      "championnat": "Eredivisie",
+      "equipes": ["PSV Eindhoven", "Feyenoord", "NEC Nijmegen"]
+    },
+    "Belgique": {
+      "championnat": "Jupiler Pro League",
+      "equipes": ["Club Brugge", "Union Saint-Gilloise", "Sint-Truiden"]
+    },
+    "Turquie": {
+      "championnat": "Süper Lig",
+      "equipes": ["Galatasaray", "Fenerbahçe", "Trabzonspor"]
+    },
+    "Écosse": {
+      "championnat": "Premiership",
+      "equipes": ["Heart of Midlothian", "Rangers", "Celtic"]
+    },
+    "Grèce": {
+      "championnat": "Super League",
+      "equipes": ["AEK Athens", "Olympiacos", "PAOK"]
+    },
+    "Autriche": {
+      "championnat": "Bundesliga",
+      "equipes": ["LASK", "Sturm Graz", "RB Salzburg"]
+    },
+    "Suisse": {
+      "championnat": "Super League",
+      "equipes": ["FC Thun", "FC St. Gallen", "FC Lugano"]
+    },
+    "Danemark": {
+      "championnat": "Superliga",
+      "equipes": ["AGF", "FC Midtjylland", "Sønderjyske"]
+    },
+    "Tchéquie": {
+      "championnat": "Chance Liga",
+      "equipes": ["Slavia Prague", "Sparta Prague", "Viktoria Plzeň"]
+    },
+    "Pologne": {
+      "championnat": "Ekstraklasa",
+      "equipes": ["Lech Poznań", "Górnik Zabrze", "Jagiellonia Białystok"]
+    },
+    "Serbie": {
+      "championnat": "SuperLiga",
+      "equipes": ["Crvena zvezda", "Vojvodina", "Partizan"]
+    },
+    "Croatie": {
+      "championnat": "HNL",
+      "equipes": ["Dinamo Zagreb", "Hajduk Split", "Rijeka"]
+    },
+    "Hongrie": {
+      "championnat": "NB I",
+      "equipes": ["Győri ETO", "Ferencváros", "Paks"]
+    },
+    "Bulgarie": {
+      "championnat": "efbet League",
+      "equipes": ["Levski Sofia", "CSKA 1948", "Ludogorets Razgrad"]
+    },
+    "Arabie saoudite": {
+      "championnat": "Saudi Pro League",
+      "equipes": ["Al-Nassr", "Al-Hilal", "Al-Ahli"]
+    },
+    "Qatar": {
+      "championnat": "Qatar Stars League",
+      "equipes": ["Al Sadd", "Al Duhail", "Al Rayyan"]
+    },
+    "Émirats arabes unis": {
+      "championnat": "UAE Pro League",
+      "equipes": ["Shabab Al Ahli", "Al Ain", "Sharjah"]
+    },
+    "Iran": {
+      "championnat": "Persian Gulf Pro League",
+      "equipes": ["Estghlal", "Persepolis", "Sepahan"]
+    },
+    "Israël": {
+      "championnat": "Israeli Premier League",
+      "equipes": ["Maccabi Tel Aviv", "Maccabi Haifa", "Beitar Jerusalem"]
+    },
+    "Jordanie": {
+      "championnat": "Jordanian Pro League",
+      "equipes": ["Al Hussein", "Al Faisaly", "Al Wehdat"]
+    },
+    "Irak": {
+      "championnat": "Iraqi Stars League",
+      "equipes": ["Al-Zawraa", "Al-Shorta", "Al-Quwa Al-Jawiya"]
+    },
+    "Oman": {
+      "championnat": "Oman Professional League",
+      "equipes": ["Al-Seeb", "Dhofar", "Al-Nahda"]
+    },
+    "Japon": {
+      "championnat": "J1 League",
+      "equipes": ["Kashima Antlers", "Kashiwa Reysol", "Kyoto Sanga"]
+    },
+    "Corée du Sud": {
+      "championnat": "K League 1",
+      "equipes": ["Jeonbuk Hyundai Motors", "Daejeon Hana Citizen", "Gwangju FC"]
+    },
+    "Chine": {
+      "championnat": "Chinese Super League",
+      "equipes": ["Shanghai Port", "Shanghai Shenhua", "Chengdu Rongcheng"]
+    },
+    "Australie": {
+      "championnat": "A-League Men",
+      "equipes": ["Auckland FC", "Melbourne City", "Western United"]
+    },
+    "Inde": {
+      "championnat": "Indian Super League",
+      "equipes": ["East Bengal", "Mohun Bagan", "FC Goa"]
+    },
+    "Thaïlande": {
+      "championnat": "Thai League 1",
+      "equipes": ["Buriram United", "Bangkok United", "Port FC"]
+    },
+    "Malaisie": {
+      "championnat": "Malaysia Super League",
+      "equipes": ["Johor Darul Ta'zim", "Selangor", "Sabah"]
+    },
+    "Indonésie": {
+      "championnat": "Liga 1",
+      "equipes": ["Persib Bandung", "Persija Jakarta", "Persebaya Surabaya"]
+    },
+    "Vietnam": {
+      "championnat": "V.League 1",
+      "equipes": ["Nam Định", "Hà Nội FC", "Thể Công-Viettel"]
+    },
+    "Ouzbékistan": {
+      "championnat": "Super League",
+      "equipes": ["Pakhtakor", "Nasaf", "Neftchi Fergana"]
+    },
+    "Mexique": {
+      "championnat": "Liga MX",
+      "equipes": ["Toluca", "Cruz Azul", "Club América"]
+    },
+    "États-Unis": {
+      "championnat": "MLS",
+      "equipes": ["Philadelphia Union", "FC Cincinnati", "Nashville SC"]
+    },
+    "Canada": {
+      "championnat": "Canadian Premier League",
+      "equipes": ["Atlético Ottawa", "Forge FC", "Cavalry FC"]
+    },
+    "Costa Rica": {
+      "championnat": "Primera División",
+      "equipes": ["Alajuelense", "Saprissa", "Herediano"]
+    },
+    "Honduras": {
+      "championnat": "Liga Nacional",
+      "equipes": ["Olimpia", "Motagua", "Real España"]
+    },
+    "Jamaïque": {
+      "championnat": "Premier League",
+      "equipes": ["Mount Pleasant", "Cavalier", "Arnett Gardens"]
+    },
+    "Panama": {
+      "championnat": "Liga Panameña",
+      "equipes": ["Plaza Amador", "Tauro", "San Francisco"]
+    },
+    "Brésil": {
+      "championnat": "Brasileirão",
+      "equipes": ["Flamengo", "Palmeiras", "Cruzeiro"]
+    },
+    "Argentine": {
+      "championnat": "Primera División",
+      "equipes": ["Rosario Central", "Boca Juniors", "Argentinos Juniors"]
+    },
+    "Colombie": {
+      "championnat": "Primera A",
+      "equipes": ["Atlético Nacional", "Independiente Medellín", "Millonarios"]
+    },
+    "Équateur": {
+      "championnat": "LigaPro",
+      "equipes": ["Independiente del Valle", "Barcelona SC", "LDU Quito"]
+    },
+    "Chili": {
+      "championnat": "Primera División",
+      "equipes": ["Coquimbo Unido", "Universidad Católica", "Audax Italiano"]
+    },
+    "Paraguay": {
+      "championnat": "Primera División",
+      "equipes": ["Olimpia", "Libertad", "Cerro Porteño"]
+    },
+    "Uruguay": {
+      "championnat": "Primera División",
+      "equipes": ["Nacional", "Peñarol", "Liverpool Montevideo"]
+    },
+    "Pérou": {
+      "championnat": "Primera División",
+      "equipes": ["Universitario", "Alianza Lima", "Sporting Cristal"]
+    },
+    "Bolivie": {
+      "championnat": "Division Profesional",
+      "equipes": ["Always Ready", "Bolívar", "The Strongest"]
+    },
+    "Venezuela": {
+      "championnat": "Liga FUTVE",
+      "equipes": ["Caracas", "Deportivo Táchira", "Academia Puerto Cabello"]
+    }
+  }
