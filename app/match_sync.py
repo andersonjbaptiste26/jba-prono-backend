@@ -69,7 +69,7 @@ def sync_teams_and_fetch_matches_to_neon():
 
         url = "https://api.groq.com/openai/v1/chat/completions"
         payload = {
-            "model": "llama-3.1-8b-instant",  # Modèle mis à jour et garanti disponible
+            "model": "llama3-8b-8192",  # Modèle de base garanti 100% actif sur tous les comptes Groq
             "messages": [
                 {"role": "system", "content": "Tu es un expert en football et en analyse de données sportives. Tu réponds toujours en JSON strict."},
                 {"role": "user", "content": prompt}
