@@ -14,7 +14,7 @@ def get_db_connection():
 
 def sync_teams_and_fetch_matches_to_neon():
     try:
-        # 1. Récupération des équipes directement depuis la base de données Neon
+        # 1. Récupération des équipes depuis la base de données Neon
         conn = get_db_connection()
         cur = conn.cursor()
         
@@ -31,7 +31,7 @@ def sync_teams_and_fetch_matches_to_neon():
         for row in db_teams:
             teams_summary.append(f"- {row['team_name']} ({row['league']}, {row['country']})")
 
-        # On limite à 40 équipes par appel pour garder un prompt optimisé pour l'IA
+        # On limite à 40 équipes par appel pour garder un prompt optimisé
         teams_str = "\n".join(teams_summary[:40])
         today_str = datetime.now().strftime("%Y-%m-%d")
         end_date_str = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
@@ -43,7 +43,7 @@ def sync_teams_and_fetch_matches_to_neon():
             conn.close()
             return False
 
-        # 2. Requête IA + Web (Gemini)
+        # 2. Requête IA + Web avec le modèle mis à jour (gemini-3.6-flash)
         prompt = f"""
         Aujourd'hui nous sommes le {today_str}. Utilise la recherche web pour trouver les vrais prochains matchs officiels de football prévus entre le {today_str} et le {end_date_str} pour ces équipes :
         {teams_str}
@@ -63,7 +63,7 @@ def sync_teams_and_fetch_matches_to_neon():
         Si aucun match réel n'est trouvé, renvoie un tableau vide [].
         """
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "tools": [{"googleSearch": {}}]
@@ -109,7 +109,7 @@ def sync_teams_and_fetch_matches_to_neon():
             conn.close()
             return False
 
-        # 3. Nettoyage et Insertion SQL des nouveaux matchs dans matches_cache
+        # 3. Insertion SQL des nouveaux matchs
         cur.execute("DELETE FROM matches_cache WHERE match_date < CURRENT_DATE;")
 
         for m in matches_list:
