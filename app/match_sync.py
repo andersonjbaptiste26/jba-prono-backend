@@ -69,7 +69,7 @@ def sync_teams_and_fetch_matches_to_neon():
 
         url = "https://api.groq.com/openai/v1/chat/completions"
         payload = {
-            "model": "llama-3.3-70b-versatile",
+            "model": "llama-3.1-8b-instant",  # Modèle mis à jour et garanti disponible
             "messages": [
                 {"role": "system", "content": "Tu es un expert en football et en analyse de données sportives. Tu réponds toujours en JSON strict."},
                 {"role": "user", "content": prompt}
@@ -77,7 +77,6 @@ def sync_teams_and_fetch_matches_to_neon():
             "temperature": 0.1
         }
 
-        # Ajout d'un User-Agent de navigateur pour contourner le blocage Cloudflare (Erreur 1010)
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
