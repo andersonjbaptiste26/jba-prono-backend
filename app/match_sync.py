@@ -3,8 +3,13 @@ import os
 import urllib.request
 import urllib.error
 from datetime import datetime, timedelta
+import logging
 import psycopg2
 import psycopg2.extras
+
+# Configuration d'un logger pour forcer l'affichage immédiat dans les logs Railway
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("match_sync")
 
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
@@ -13,6 +18,7 @@ def get_db_connection():
     return psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
 
 def sync_teams_and_fetch_matches_to_neon():
+    logger.info("Début de la synchronisation des matchs via Groq...")
     try:
         # 1. Récupération des équipes depuis Neon
         conn = get_db_connection()
@@ -22,7 +28,7 @@ def sync_teams_and_fetch_matches_to_neon():
         db_teams = cur.fetchall()
         
         if not db_teams:
-            print("Aucune équipe trouvée dans la table global_teams.")
+            logger.error("Aucune équipe trouvée dans la table global_teams.")
             cur.close()
             conn.close()
             return False
@@ -31,17 +37,19 @@ def sync_teams_and_fetch_matches_to_neon():
         for row in db_teams:
             teams_summary.append(f"- {row['team_name']} ({row['league']}, {row['country']})")
 
-        # On prend un lot d'équipes
+        # Sélection d'un lot d'équipes pour l'appel IA
         teams_str = "\n".join(teams_summary[:40])
         today_str = datetime.now().strftime("%Y-%m-%d")
         end_date_str = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
 
         api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            print("Clé API Groq introuvable dans l'environnement.")
+            logger.error("Clé API GROQ_API_KEY introuvable dans l'environnement Railway.")
             cur.close()
             conn.close()
             return False
+
+        logger.info(f"Envoi de la requête à Groq pour {min(len(db_teams), 40)} équipes...")
 
         # 2. Requête vers l'API Groq (Llama 3.3)
         prompt = f"""
@@ -99,21 +107,23 @@ def sync_teams_and_fetch_matches_to_neon():
                     matches_list = json.loads(text_response)
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8")
-            print(f"Erreur HTTP Groq ({e.code}) : {error_body}")
+            logger.error(f"Erreur HTTP Groq ({e.code}) : {error_body}")
             cur.close()
             conn.close()
             return False
         except Exception as e:
-            print(f"Erreur inattendue lors de l'appel Groq : {e}")
+            logger.error(f"Erreur inattendue lors de l'appel Groq : {e}")
             cur.close()
             conn.close()
             return False
 
         if not isinstance(matches_list, list) or len(matches_list) == 0:
-            print("Aucun match retourné par l'IA ou format JSON invalide.")
+            logger.warning("Aucun match retourné par l'IA ou format JSON invalide.")
             cur.close()
             conn.close()
             return False
+
+        logger.info(f"{len(matches_list)} matchs reçus de l'IA. Insertion dans Neon...")
 
         # 3. Insertion SQL dans Neon
         cur.execute("DELETE FROM matches_cache WHERE match_date < CURRENT_DATE;")
@@ -135,9 +145,9 @@ def sync_teams_and_fetch_matches_to_neon():
         conn.commit()
         cur.close()
         conn.close()
-        print(f"Succès : {len(matches_list)} matchs insérés dans Neon via Groq.")
+        logger.info(f"Succès total : {len(matches_list)} matchs insérés dans Neon via Groq.")
         return True
 
     except Exception as e:
-        print(f"Erreur générale dans la synchronisation : {e}")
+        logger.error(f"Erreur générale critique dans la synchronisation : {e}")
         return False
