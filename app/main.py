@@ -119,11 +119,22 @@ def get_best_day_insights():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des insights : {e}")
 
-# --- ROUTE ADMIN POUR DÉCLENCHER LA SYNCHRONISATION ---
+# --- ROUTE ADMIN POUR DÉCLENCHER LA SYNCHRONISATION VIA GROQ ---
 @app.post("/admin/sync-ai-matches")
-def sync_ai_matches():
-    success = sync_teams_and_fetch_matches_to_neon()
-    if success:
-        return {"status": "success", "message": "Base Neon mise à jour avec succès via la recherche Web de l'IA."}
-    else:
-        raise HTTPException(status_code=500, detail="Échec de la synchronisation. Vérifiez la clé API Gemini ou le contenu du fichier JSON.")
+def trigger_ai_match_sync():
+    try:
+        success = sync_teams_and_fetch_matches_to_neon()
+        if not success:
+            raise HTTPException(
+                status_code=500, 
+                detail="Échec de la synchronisation. Vérifiez les logs Railway (clé GROQ_API_KEY ou table global_teams)."
+            )
+        return {
+            "status": "success", 
+            "message": "Matchs synchronisés avec succès depuis Groq et enregistrés dans Neon !"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur critique lors de la synchronisation : {str(e)}"
+        )
