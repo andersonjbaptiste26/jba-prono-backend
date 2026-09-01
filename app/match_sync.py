@@ -44,7 +44,7 @@ def sync_teams_and_fetch_matches_to_neon():
     today_str = datetime.now().strftime("%Y-%m-%d")
     end_date_str = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
 
-    # 2. Requête IA + Web (Gemini)
+    # 2. Requête IA + Web (Gemini avec le modèle corrigé gemini-1.5-flash)
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         print("Clé API Gemini introuvable.")
@@ -69,7 +69,8 @@ def sync_teams_and_fetch_matches_to_neon():
     Si aucun match réel n'est trouvé, renvoie un tableau vide [].
     """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    # URL mise à jour avec gemini-1.5-flash
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "tools": [{"googleSearch": {}}]
