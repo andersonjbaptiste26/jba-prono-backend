@@ -14,7 +14,7 @@ def get_db_connection():
 
 def sync_teams_and_fetch_matches_to_neon():
     try:
-        # 1. Récupération des équipes depuis la base de données Neon
+        # 1. Récupération des équipes depuis Neon
         conn = get_db_connection()
         cur = conn.cursor()
         
@@ -31,21 +31,21 @@ def sync_teams_and_fetch_matches_to_neon():
         for row in db_teams:
             teams_summary.append(f"- {row['team_name']} ({row['league']}, {row['country']})")
 
-        # On limite à 40 équipes par appel pour garder un prompt optimisé
+        # On prend un lot d'équipes
         teams_str = "\n".join(teams_summary[:40])
         today_str = datetime.now().strftime("%Y-%m-%d")
         end_date_str = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
 
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            print("Clé API Gemini introuvable dans l'environnement.")
+            print("Clé API Groq introuvable dans l'environnement.")
             cur.close()
             conn.close()
             return False
 
-        # 2. Requête IA + Web avec le modèle mis à jour (gemini-3.6-flash)
+        # 2. Requête vers l'API Groq (Llama 3.3)
         prompt = f"""
-        Aujourd'hui nous sommes le {today_str}. Utilise la recherche web pour trouver les vrais prochains matchs officiels de football prévus entre le {today_str} et le {end_date_str} pour ces équipes :
+        Aujourd'hui nous sommes le {today_str}. Donne les matchs officiels de football prévus entre le {today_str} et le {end_date_str} pour ces équipes :
         {teams_str}
 
         Renvoie UNIQUEMENT un tableau JSON valide (sans texte additionnel, sans balises markdown autour) avec cette structure exacte :
@@ -60,19 +60,26 @@ def sync_teams_and_fetch_matches_to_neon():
             "tip": "1X — Domicile ou Nul"
           }}
         ]
-        Si aucun match réel n'est trouvé, renvoie un tableau vide [].
+        Si tu n'as pas de certitude sur un match exact à ces dates, renvoie un tableau vide [].
         """
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
+        url = "https://api.groq.com/openai/v1/chat/completions"
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "tools": [{"googleSearch": {}}]
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": "Tu es un expert en football et en analyse de données sportives. Tu réponds toujours en JSON strict."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.1
         }
 
         req = urllib.request.Request(
             url,
             data=bytes(json.dumps(payload), encoding="utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
             method="POST"
         )
 
@@ -80,10 +87,9 @@ def sync_teams_and_fetch_matches_to_neon():
         try:
             with urllib.request.urlopen(req, timeout=40) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
-                candidates = res_data.get("candidates", [])
-                if candidates:
-                    content_parts = candidates[0].get("content", {}).get("parts", [])
-                    text_response = "".join([p.get("text", "") for p in content_parts]).strip()
+                choices = res_data.get("choices", [])
+                if choices:
+                    text_response = choices[0].get("message", {}).get("content", "").strip()
                     
                     if "```json" in text_response:
                         text_response = text_response.split("```json")[1].split("```")[0].strip()
@@ -93,12 +99,12 @@ def sync_teams_and_fetch_matches_to_neon():
                     matches_list = json.loads(text_response)
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8")
-            print(f"Erreur HTTP Gemini ({e.code}) : {error_body}")
+            print(f"Erreur HTTP Groq ({e.code}) : {error_body}")
             cur.close()
             conn.close()
             return False
         except Exception as e:
-            print(f"Erreur inattendue lors de l'appel Gemini : {e}")
+            print(f"Erreur inattendue lors de l'appel Groq : {e}")
             cur.close()
             conn.close()
             return False
@@ -109,7 +115,7 @@ def sync_teams_and_fetch_matches_to_neon():
             conn.close()
             return False
 
-        # 3. Insertion SQL des nouveaux matchs
+        # 3. Insertion SQL dans Neon
         cur.execute("DELETE FROM matches_cache WHERE match_date < CURRENT_DATE;")
 
         for m in matches_list:
@@ -129,7 +135,7 @@ def sync_teams_and_fetch_matches_to_neon():
         conn.commit()
         cur.close()
         conn.close()
-        print(f"Succès : {len(matches_list)} matchs insérés dans Neon depuis la base de données.")
+        print(f"Succès : {len(matches_list)} matchs insérés dans Neon via Groq.")
         return True
 
     except Exception as e:
