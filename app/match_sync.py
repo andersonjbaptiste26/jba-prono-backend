@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import psycopg2
 import psycopg2.extras
 
-# Fonction utilitaire de connexion à Neon
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
@@ -16,7 +15,6 @@ def get_db_connection():
 def sync_teams_and_fetch_matches_to_neon():
     teams_json_path = os.path.join("app", "data", "global_teams.json")
     
-    # 1. Lecture du JSON
     if not os.path.exists(teams_json_path):
         print(f"Fichier introuvable : {teams_json_path}")
         return False
@@ -40,14 +38,14 @@ def sync_teams_and_fetch_matches_to_neon():
         print("Aucune équipe trouvée dans global_teams.json.")
         return False
 
-    teams_str = "\n".join(teams_summary[:50])
+    # On limite à 30 équipes pour éviter des requêtes trop lourdes
+    teams_str = "\n".join(teams_summary[:30])
     today_str = datetime.now().strftime("%Y-%m-%d")
     end_date_str = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
 
-    # 2. Requête IA + Web (Gemini avec le modèle corrigé gemini-1.5-flash)
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        print("Clé API Gemini introuvable.")
+        print("Clé API Gemini introuvable dans l'environnement.")
         return False
 
     prompt = f"""
@@ -69,8 +67,7 @@ def sync_teams_and_fetch_matches_to_neon():
     Si aucun match réel n'est trouvé, renvoie un tableau vide [].
     """
 
-    # URL mise à jour avec gemini-1.5-flash
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "tools": [{"googleSearch": {}}]
@@ -98,15 +95,19 @@ def sync_teams_and_fetch_matches_to_neon():
                     text_response = text_response.split("```")[1].split("```")[0].strip()
                 
                 matches_list = json.loads(text_response)
+    except urllib.error.HTTPError as e:
+        # Affiche l'erreur exacte renvoyée par Google dans les logs de Railway
+        error_body = e.read().decode("utf-8")
+        print(f"Erreur HTTP Gemini ({e.code}) : {error_body}")
+        return False
     except Exception as e:
-        print(f"Erreur appel Gemini Web Search : {e}")
+        print(f"Erreur inattendue lors de l'appel Gemini : {e}")
         return False
 
     if not isinstance(matches_list, list) or len(matches_list) == 0:
-        print("Aucun match retourné par l'IA.")
+        print("Aucun match retourné par l'IA ou format JSON invalide.")
         return False
 
-    # 3. Insertion SQL dans Neon
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -133,5 +134,5 @@ def sync_teams_and_fetch_matches_to_neon():
         print(f"Succès : {len(matches_list)} matchs insérés dans Neon.")
         return True
     except Exception as e:
-        print(f"Erreur insertion Neon : {e}")
+        print(f"Erreur lors de l'insertion dans la base Neon : {e}")
         return False
