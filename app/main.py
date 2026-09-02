@@ -5,14 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import psycopg2.extras
 
-# Importation de vos routeurs et de votre service de synchronisation
+# Importation de vos routeurs et du chargeur JSON
 from .routers import matches, predictions, teams, bets, admin, notes, auth
-from app.match_sync import sync_teams_and_fetch_matches_to_neon, get_db_connection
+from app import json_loader
 
 app = FastAPI(
     title="JBa Prono API",
     description="Backend d'analyse statistique et prédictive des matchs de football (Multi-utilisateurs).",
-    version="0.6.0",
+    version="0.7.0",
 )
 
 app.add_middleware(
@@ -28,7 +28,7 @@ async def add_no_cache_headers(request: Request, call_next):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     return response
 
-# Inclusion des routeurs
+# Inclusion des routeurs existants
 app.include_router(matches.router)
 app.include_router(predictions.router)
 app.include_router(teams.router)
@@ -37,11 +37,14 @@ app.include_router(admin.router)
 app.include_router(notes.router)
 app.include_router(auth.router)
 
+# Inclusion du nouveau module d'importation JSON
+app.include_router(json_loader.router)
+
 @app.get("/")
 def root():
     return {
         "status": "ok", 
-        "service": "JBa Prono API (Neon DB Active)",
+        "service": "JBa Prono API (Neon DB Active + JSON Sync)",
         "legal_notice": "Avertissement : Les analyses et pronostics fournis sont à titre purement indicatif. Jouez de manière responsable."
     }
 
@@ -62,7 +65,11 @@ def get_legal_disclaimer():
 @app.get("/insights/best-day")
 def get_best_day_insights():
     try:
-        conn = get_db_connection()
+        database_url = os.environ.get("DATABASE_URL")
+        if not database_url:
+            raise Exception("DATABASE_URL non configurée.")
+        
+        conn = psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
         cur = conn.cursor()
 
         cur.execute("""
@@ -118,23 +125,3 @@ def get_best_day_insights():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des insights : {e}")
-
-# --- ROUTE ADMIN POUR DÉCLENCHER LA SYNCHRONISATION VIA GROQ ---
-@app.post("/admin/sync-ai-matches")
-def trigger_ai_match_sync():
-    try:
-        success = sync_teams_and_fetch_matches_to_neon()
-        if not success:
-            raise HTTPException(
-                status_code=500, 
-                detail="Échec de la synchronisation. Vérifiez les logs Railway (clé GROQ_API_KEY ou table global_teams)."
-            )
-        return {
-            "status": "success", 
-            "message": "Matchs synchronisés avec succès depuis Groq et enregistrés dans Neon !"
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Erreur critique lors de la synchronisation : {str(e)}"
-        )
