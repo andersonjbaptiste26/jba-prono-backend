@@ -1,4 +1,5 @@
-   {
+[
+{
     "Angleterre": {
       "championnat": "Premier League",
       "equipes": ["Arsenal", "Manchester City", "Manchester United"]
@@ -220,3 +221,4 @@
       "equipes": ["Caracas", "Deportivo Táchira", "Academia Puerto Cabello"]
     }
   }
+]
