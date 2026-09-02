@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import matches, predictions, teams, bets, admin, notes, auth, json_loader
+from .routers import matches, predictions, teams, bets, admin, notes, auth
 
 app = FastAPI(
     title="JBa Prono API",
@@ -31,7 +31,6 @@ app.include_router(bets.router)
 app.include_router(admin.router)
 app.include_router(notes.router)
 app.include_router(auth.router)
-app.include_router(json_loader.router)
 
 
 @app.get("/")
