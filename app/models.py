@@ -213,6 +213,7 @@ class MatchesBestDay(Base):
     championnat = Column(String, nullable=False)
     classement_2025 = Column(String)
     equipe = Column(String, nullable=False)
+    pays = Column(String)  # Nouvelle colonne ajoutée
 
 
 class BestDay(Base):
@@ -224,3 +225,4 @@ class BestDay(Base):
     date = Column(Date, nullable=False)
     heure = Column(String)
     status = Column(String, default="Not Yet")
+    pays = Column(String)  # Nouvelle colonne ajoutée
