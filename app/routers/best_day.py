@@ -27,6 +27,7 @@ class TeamIn(BaseModel):
     championnat: str
     classement_2025: Optional[str] = None
     equipe: str
+    pays: Optional[str] = None          # <--- AJOUT
 
 
 class MatchIn(BaseModel):
@@ -35,6 +36,7 @@ class MatchIn(BaseModel):
     equipe_exterieur: str
     date: date_type
     heure: Optional[str] = None
+    pays: Optional[str] = None          # <--- AJOUT
 
 
 class ImportPayload(BaseModel):
@@ -57,7 +59,12 @@ def import_matches_json(
         if exists:
             teams_skipped += 1
             continue
-        db.add(MatchesBestDay(championnat=t.championnat, classement_2025=t.classement_2025, equipe=t.equipe))
+        db.add(MatchesBestDay(
+            championnat=t.championnat,
+            classement_2025=t.classement_2025,
+            equipe=t.equipe,
+            pays=t.pays                      # <--- AJOUT
+        ))
         teams_added += 1
 
     matches_added, matches_skipped = 0, 0
@@ -78,6 +85,7 @@ def import_matches_json(
             date=m.date,
             heure=m.heure,
             status="Not Yet",
+            pays=m.pays                      # <--- AJOUT
         ))
         matches_added += 1
 
@@ -120,6 +128,7 @@ def list_best_day_matches(db: Session = Depends(get_db)):
             "date": m.date.isoformat(),
             "heure": m.heure,
             "status": m.status,
+            "pays": m.pays                      # <--- AJOUT
         })
     return result
 
@@ -128,6 +137,12 @@ def list_best_day_matches(db: Session = Depends(get_db)):
 def list_favorite_teams(db: Session = Depends(get_db)):
     rows = db.query(MatchesBestDay).order_by(MatchesBestDay.championnat, MatchesBestDay.classement_2025).all()
     return [
-        {"id": r.id, "championnat": r.championnat, "classement_2025": r.classement_2025, "equipe": r.equipe}
+        {
+            "id": r.id,
+            "championnat": r.championnat,
+            "classement_2025": r.classement_2025,
+            "equipe": r.equipe,
+            "pays": r.pays                      # <--- AJOUT
+        }
         for r in rows
     ]
