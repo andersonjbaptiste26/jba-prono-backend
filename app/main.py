@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import matches, predictions, teams, bets, admin, notes, auth
+from .routers import json_loader
 
 app = FastAPI(
     title="JBa Prono API",
@@ -32,15 +33,6 @@ app.include_router(admin.router)
 app.include_router(notes.router)
 app.include_router(auth.router)
 #-- Json file ---
-# Si json_loader est un module situé dans votre package 'app' :
-from app import json_loader
-
-# Ou s'il se trouve dans le même répertoire (import relatif) :
-from . import json_loader
-
-# Ou s'il s'agit d'un module de premier niveau :
-import json_loader
-
 app.include_router(json_loader.router)
 
 
