@@ -1,22 +1,18 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 import json
-import os
-import psycopg2
-import psycopg2.extras
+
+# Importation de votre gestionnaire de session (chemin relatif cohérent avec votre structure)
+from ..database import get_db
 
 router = APIRouter()
 
-def get_db_connection():
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        raise Exception("La variable d'environnement DATABASE_URL n'est pas configurée.")
-    return psycopg2.connect(database_url, cursor_factory=psycopg2.extras.RealDictCursor)
-
 @router.post("/admin/upload-json-matches")
-async def upload_json_matches(file: UploadFile = File(...)):
+async def upload_json_matches(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """
-    Endpoint pour téléverser un fichier JSON contenant les matchs de la semaine
-    et mettre à jour la base de données Neon.
+    Endpoint pour téléverser un fichier JSON et mettre à jour la table matches_cache
+    en utilisant SQLAlchemy.
     """
     try:
         contents = await file.read()
@@ -28,34 +24,60 @@ async def upload_json_matches(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Le fichier JSON doit contenir une liste de matchs.")
 
     try:
-        # Utilisation des context managers pour garantir la fermeture propre et le commit/rollback automatique
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                # Nettoyage optionnel des matchs passés
-                cur.execute("DELETE FROM matches_cache WHERE match_date < CURRENT_DATE;")
+        # 1. Nettoyage des matchs passés via SQLAlchemy text()
+        db.execute(text("DELETE FROM matches_cache WHERE match_date < CURRENT_DATE;"))
 
-                inserted_count = 0
-                for m in matches_list:
-                    cur.execute("""
-                        INSERT INTO matches_cache (match_date, home_team, away_team, league, match_time, probability, tip, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                    """, (
-                        m.get("date"),
-                        m.get("home_team"),
-                        m.get("away_team"),
-                        m.get("league"),
-                        m.get("time", "20:00"),
-                        m.get("probability", 70),
-                        m.get("tip", "1X"),
-                    ))
-                    inserted_count += 1
-                    
-        # La connexion et le curseur se ferment d'eux-mêmes ici, et les changements sont commités.
+        inserted_count = 0
+        for index, m in enumerate(matches_list):
+            # Validation des champs obligatoires
+            date_val = m.get("date")
+            home_team = m.get("home_team")
+            away_team = m.get("away_team")
+
+            if not date_val or not home_team or not away_team:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Erreur à l'élément #{index + 1} : les champs 'date', 'home_team' et 'away_team' sont obligatoires."
+                )
+
+            # Sécurisation de la probabilité (gère le cas "75%")
+            raw_prob = m.get("probability", 70)
+            if isinstance(raw_prob, str):
+                raw_prob = raw_prob.replace("%", "").strip()
+            try:
+                probability = int(raw_prob)
+            except (ValueError, TypeError):
+                probability = 70
+
+            # 2. Insertion sécurisée en utilisant les paramètres nommés de SQLAlchemy
+            db.execute(
+                text("""
+                    INSERT INTO matches_cache (match_date, home_team, away_team, league, match_time, probability, tip, updated_at)
+                    VALUES (:match_date, :home_team, :away_team, :league, :match_time, :probability, :tip, CURRENT_TIMESTAMP)
+                """),
+                {
+                    "match_date": date_val,
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "league": m.get("league", "Inconnue"),
+                    "match_time": m.get("time", "20:00"),
+                    "probability": probability,
+                    "tip": m.get("tip", "1X")
+                }
+            )
+            inserted_count += 1
+
+        # Validation de la transaction
+        db.commit()
 
         return {
             "status": "success",
-            "message": f"{inserted_count} matchs importés avec succès depuis le fichier JSON !"
+            "message": f"{inserted_count} matchs importés avec succès dans matches_cache via SQLAlchemy !"
         }
 
+    except HTTPException as he:
+        db.rollback()
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'importation du JSON : {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'importation SQLAlchemy : {str(e)}")
