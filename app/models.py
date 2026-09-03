@@ -202,4 +202,25 @@ class DailyNote(Base):
     bet_statut = Column(String)
     argent = Column(Numeric(12, 2))
     notebook = Column(String)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now()) 
+
+
+
+
+class MatchesBestDay(Base):
+    __tablename__ = "matches_best_day"
+    id = Column(Integer, primary_key=True)
+    championnat = Column(String, nullable=False)
+    classement_2025 = Column(String)
+    equipe = Column(String, nullable=False)
+
+
+class BestDay(Base):
+    __tablename__ = "best_day"
+    id = Column(Integer, primary_key=True)
+    championnat = Column(String, nullable=False)
+    equipe_domicile = Column(String, nullable=False)
+    equipe_exterieur = Column(String, nullable=False)
+    date = Column(Date, nullable=False)
+    heure = Column(String)
+    status = Column(String, default="Not Yet")
