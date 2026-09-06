@@ -33,14 +33,18 @@ CATEGORIES = [
 
 def _eligible_predictions(db: Session) -> list[Prediction]:
     """Récupère les prédictions Best Picks (>= 66%) avec matchs futurs."""
-    return (
-        db.query(Prediction)
-        .join(Event, Prediction.event_id == Event.id)
-        .join(Match, Event.match_id == Match.id)
-        .filter(Prediction.probability >= MIN_INDIVIDUAL_PROB)
-        .filter(Match.kickoff_at >= func.now())
-        .all()
-    )
+    try:
+        return (
+            db.query(Prediction)
+            .join(Event, Prediction.event_id == Event.id)
+            .join(Match, Event.match_id == Match.id)
+            .filter(Prediction.probability >= MIN_INDIVIDUAL_PROB)
+            .filter(Match.kickoff_at >= func.now())
+            .all()
+        )
+    except Exception as e:
+        print(f"❌ Erreur dans _eligible_predictions : {e}")
+        return []
 
 
 def compute_combo(selections: list[Prediction]) -> dict | None:
@@ -49,9 +53,9 @@ def compute_combo(selections: list[Prediction]) -> dict | None:
     prob_sum = 0.0
     real_prob = 1.0
     for p in selections:
-        odds = float(p.event.odds_value) if p.event.odds_value else None
-        if not odds:
+        if not p.event or not p.event.odds_value:
             return None
+        odds = float(p.event.odds_value)
         total_odds *= odds
         prob_sum += float(p.probability)
         real_prob *= (float(p.probability) / 100.0)
@@ -63,18 +67,38 @@ def compute_combo(selections: list[Prediction]) -> dict | None:
 
 
 def _get_teams_from_combo(combo):
-    """Extrait les noms des équipes d'une combinaison."""
+    """Extrait les noms des équipes d'une combinaison (avec sécurité)."""
     teams = set()
     for p in combo:
-        match = p.event.match
-        teams.add(match.home_team.name)
-        teams.add(match.away_team.name)
+        try:
+            match = p.event.match
+            if match.home_team:
+                teams.add(match.home_team.name)
+            if match.away_team:
+                teams.add(match.away_team.name)
+        except Exception:
+            # Si une relation est manquante, on ignore
+            pass
     return teams
+
+
+def _get_match_info(p):
+    """Récupère les infos d'un match de manière sécurisée."""
+    try:
+        match = p.event.match
+        home = match.home_team.name if match.home_team else "?"
+        away = match.away_team.name if match.away_team else "?"
+        comp = match.competition.name if match.competition else None
+        return home, away, comp
+    except Exception as e:
+        print(f"⚠️ Erreur récupération match info : {e}")
+        return "?", "?", None
 
 
 def generate_ticket_combos(db: Session) -> list[dict]:
     predictions = _eligible_predictions(db)
     if len(predictions) < MIN_COMBO_SIZE:
+        print("⚠️ Pas assez de prédictions éligibles (>=66%)")
         return []
 
     # Générer toutes les combinaisons éligibles
@@ -97,18 +121,15 @@ def generate_ticket_combos(db: Session) -> list[dict]:
                 })
 
     if not all_candidates:
+        print("⚠️ Aucune combinaison éligible après filtrage")
         return []
 
     # Tri par probabilité réelle décroissante (pour chaque catégorie on triera)
-    # On va constituer une liste de tickets sélectionnés
     selected_tickets = []
-    used_teams = set()  # équipes déjà utilisées
+    used_teams = set()
 
-    # Fonction de sélection pour une catégorie
     def select_from_category(cat_min, cat_max, desired):
-        # Filtrer les candidats dans la fourchette
         eligible = [c for c in all_candidates if cat_min <= c["total_odds"] < cat_max]
-        # Trier par probabilité réelle décroissante
         eligible.sort(key=lambda c: c["real_combined_probability"], reverse=True)
         chosen = []
         for c in eligible:
@@ -126,21 +147,18 @@ def generate_ticket_combos(db: Session) -> list[dict]:
         chosen = select_from_category(cat["min"], cat["max"], cat["desired"])
         selected_tickets.extend(chosen)
 
-    # Si on n'a pas assez de tickets, on pourrait compléter avec les meilleurs restants
-    # mais on s'arrête là pour respecter les catégories.
-
     # Construire la réponse au format attendu
     result = []
     for c in selected_tickets:
         selections = []
         for p in c["selections"]:
+            home, away, comp = _get_match_info(p)
             event = p.event
-            match = event.match
             selections.append({
                 "event_id": event.id,
-                "match": f"{match.home_team.name} vs {match.away_team.name}",
-                "competition": match.competition.name if match.competition else None,
-                "kickoff_at": match.kickoff_at.isoformat(),
+                "match": f"{home} vs {away}",
+                "competition": comp,
+                "kickoff_at": event.match.kickoff_at.isoformat() if event.match and event.match.kickoff_at else None,
                 "event": event.label,
                 "probability": float(p.probability),
                 "odds": float(event.odds_value),
