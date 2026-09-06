@@ -4,10 +4,10 @@ selon les critères :
 - cote combinée entre 3 et 6
 - somme des probabilités individuelles >= 75%
 - 2 à 4 matchs par ticket
+- Les matchs sont exclusivement ceux des Best Picks (probabilité >= 66%)
 
 Affiche aussi la VRAIE probabilité combinée (produit des probabilités,
-pas la somme) pour rester honnête — la somme demandée sert de filtre,
-mais ne représente pas la chance réelle de gagner le ticket entier.
+pas la somme) pour rester honnête.
 """
 from itertools import combinations
 from collections import defaultdict
@@ -16,7 +16,8 @@ from sqlalchemy import func
 
 from ..models import Prediction, Event, Match
 
-MIN_INDIVIDUAL_PROB = 50.0
+# ── Seuil aligné sur les Best Picks (66%) ──
+MIN_INDIVIDUAL_PROB = 66.0
 MIN_COMBO_SIZE = 2
 MAX_COMBO_SIZE = 4
 MIN_TOTAL_ODDS = 3.0
@@ -26,6 +27,7 @@ TOP_N_RESULTS = 3
 
 
 def _eligible_predictions(db: Session) -> list[Prediction]:
+    """Récupère les prédictions avec proba >= 66% (Best Picks) et matchs futurs."""
     return (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
@@ -45,8 +47,7 @@ def _group_by_date(predictions: list[Prediction]) -> dict:
 
 
 def compute_combo(selections: list[Prediction]) -> dict | None:
-    """Calcule les métriques d'une combinaison donnée. Retourne None si
-    une cote manque (impossible à évaluer)."""
+    """Calcule les métriques d'une combinaison donnée."""
     total_odds = 1.0
     prob_sum = 0.0
     real_prob = 1.0
@@ -74,7 +75,7 @@ def generate_ticket_combos(db: Session) -> list[dict]:
     for i in range(len(dates_sorted) - 1):
         d1, d2 = dates_sorted[i], dates_sorted[i + 1]
         if (d2 - d1).days != 1:
-            continue  # pas deux jours consécutifs, on saute
+            continue
 
         pool = by_date[d1] + by_date[d2]
 
@@ -82,7 +83,7 @@ def generate_ticket_combos(db: Session) -> list[dict]:
             for combo in combinations(pool, size):
                 match_ids = {p.event.match_id for p in combo}
                 if len(match_ids) != size:
-                    continue  # deux sélections du même match : on ignore
+                    continue
 
                 metrics = compute_combo(list(combo))
                 if not metrics:
