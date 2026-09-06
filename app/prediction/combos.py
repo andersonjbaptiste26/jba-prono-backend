@@ -1,14 +1,13 @@
 """
-Combine des pronostics (Best Picks uniquement) en tickets multiples,
-sans restriction de jours consécutifs.
-Critères :
+Combine des pronostics de deux jours consécutifs en tickets multiples,
+selon les critères :
 - cote combinée entre 3 et 6
 - somme des probabilités individuelles >= 75%
 - 2 à 4 matchs par ticket
-- matchs futurs uniquement
+- Les matchs sont exclusivement ceux des Best Picks (probabilité >= 66%)
 
-Affiche la VRAIE probabilité combinée (produit des probabilités)
-en plus de la somme, pour une évaluation honnête.
+Affiche aussi la VRAIE probabilité combinée (produit des probabilités,
+pas la somme) pour rester honnête.
 """
 from itertools import combinations
 from sqlalchemy.orm import Session
@@ -16,18 +15,17 @@ from sqlalchemy import func
 
 from ..models import Prediction, Event, Match
 
-# Seuil aligné sur les Best Picks (>= 66%)
 MIN_INDIVIDUAL_PROB = 66.0
 MIN_COMBO_SIZE = 2
 MAX_COMBO_SIZE = 4
 MIN_TOTAL_ODDS = 3.0
 MAX_TOTAL_ODDS = 6.0
 MIN_PROB_SUM = 75.0
-TOP_N_RESULTS = 3
+MAX_RESULTS = 20  # Limite pour éviter trop de combinaisons, on peut mettre None pour illimité
 
 
 def _eligible_predictions(db: Session) -> list[Prediction]:
-    """Récupère les prédictions Best Picks (proba >= 66%) pour des matchs futurs."""
+    """Récupère les prédictions avec proba >= 66% (Best Picks) et matchs futurs."""
     return (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
@@ -58,19 +56,17 @@ def compute_combo(selections: list[Prediction]) -> dict | None:
 
 
 def generate_ticket_combos(db: Session) -> list[dict]:
-    """Génère les meilleures combinaisons sans restriction de jours."""
     predictions = _eligible_predictions(db)
-
-    # Si moins de 2 prédictions, pas de combinaison possible
-    if len(predictions) < MIN_COMBO_SIZE:
+    if not predictions:
         return []
 
+    # Pas de regroupement par date : on prend toutes les prédictions éligibles
+    # On va générer des combinaisons de taille 2 à 4
     candidates = []
 
-    # Parcourir toutes les combinaisons de taille 2 à 4
     for size in range(MIN_COMBO_SIZE, MAX_COMBO_SIZE + 1):
         for combo in combinations(predictions, size):
-            # Vérifier qu'aucun match n'est dupliqué (même match_id)
+            # Vérifier qu'il n'y a pas deux sélections du même match
             match_ids = {p.event.match_id for p in combo}
             if len(match_ids) != size:
                 continue
@@ -80,14 +76,17 @@ def generate_ticket_combos(db: Session) -> list[dict]:
                 continue
 
             if MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS and metrics["probability_sum"] >= MIN_PROB_SUM:
-                # Récupérer les dates pour l'affichage (optionnel)
-                dates = sorted({p.event.match.kickoff_at.date().isoformat() for p in combo})
                 candidates.append({
                     "selections": combo,
-                    "dates": dates,
+                    "dates": sorted({p.event.match.kickoff_at.date().isoformat() for p in combo}),
                     **metrics,
                 })
 
     # Trier par probabilité réelle combinée décroissante
     candidates.sort(key=lambda c: c["real_combined_probability"], reverse=True)
-    return candidates[:TOP_N_RESULTS]
+
+    # Limiter le nombre de résultats pour éviter une surcharge (optionnel)
+    if MAX_RESULTS is not None:
+        candidates = candidates[:MAX_RESULTS]
+
+    return candidates
