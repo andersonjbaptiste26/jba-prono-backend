@@ -1,21 +1,22 @@
 """
-Combine des pronostics sur deux ou trois jours consécutifs en tickets multiples,
-selon les critères :
+Combine des pronostics (Best Picks uniquement) en tickets multiples,
+sans restriction de jours consécutifs.
+Critères :
 - cote combinée entre 3 et 6
 - somme des probabilités individuelles >= 75%
 - 2 à 4 matchs par ticket
-- Les matchs sont exclusivement ceux des Best Picks (probabilité >= 66%)
+- matchs futurs uniquement
 
-Affiche aussi la VRAIE probabilité combinée (produit des probabilités,
-pas la somme) pour rester honnête.
+Affiche la VRAIE probabilité combinée (produit des probabilités)
+en plus de la somme, pour une évaluation honnête.
 """
 from itertools import combinations
-from collections import defaultdict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..models import Prediction, Event, Match
 
+# Seuil aligné sur les Best Picks (>= 66%)
 MIN_INDIVIDUAL_PROB = 66.0
 MIN_COMBO_SIZE = 2
 MAX_COMBO_SIZE = 4
@@ -26,6 +27,7 @@ TOP_N_RESULTS = 3
 
 
 def _eligible_predictions(db: Session) -> list[Prediction]:
+    """Récupère les prédictions Best Picks (proba >= 66%) pour des matchs futurs."""
     return (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
@@ -36,15 +38,8 @@ def _eligible_predictions(db: Session) -> list[Prediction]:
     )
 
 
-def _group_by_date(predictions: list[Prediction]) -> dict:
-    by_date = defaultdict(list)
-    for p in predictions:
-        d = p.event.match.kickoff_at.date()
-        by_date[d].append(p)
-    return by_date
-
-
 def compute_combo(selections: list[Prediction]) -> dict | None:
+    """Calcule les métriques d'une combinaison donnée."""
     total_odds = 1.0
     prob_sum = 0.0
     real_prob = 1.0
@@ -63,56 +58,36 @@ def compute_combo(selections: list[Prediction]) -> dict | None:
 
 
 def generate_ticket_combos(db: Session) -> list[dict]:
+    """Génère les meilleures combinaisons sans restriction de jours."""
     predictions = _eligible_predictions(db)
-    by_date = _group_by_date(predictions)
-    dates_sorted = sorted(by_date.keys())
+
+    # Si moins de 2 prédictions, pas de combinaison possible
+    if len(predictions) < MIN_COMBO_SIZE:
+        return []
 
     candidates = []
 
-    # --- Fenêtres de 2 jours consécutifs ---
-    for i in range(len(dates_sorted) - 1):
-        d1, d2 = dates_sorted[i], dates_sorted[i + 1]
-        if (d2 - d1).days != 1:
-            continue
-        pool = by_date[d1] + by_date[d2]
-        for size in range(MIN_COMBO_SIZE, MAX_COMBO_SIZE + 1):
-            for combo in combinations(pool, size):
-                match_ids = {p.event.match_id for p in combo}
-                if len(match_ids) != size:
-                    continue
-                metrics = compute_combo(list(combo))
-                if not metrics:
-                    continue
-                if MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS and metrics["probability_sum"] >= MIN_PROB_SUM:
-                    candidates.append({
-                        "selections": combo,
-                        "dates": [d1.isoformat(), d2.isoformat()],
-                        **metrics,
-                    })
+    # Parcourir toutes les combinaisons de taille 2 à 4
+    for size in range(MIN_COMBO_SIZE, MAX_COMBO_SIZE + 1):
+        for combo in combinations(predictions, size):
+            # Vérifier qu'aucun match n'est dupliqué (même match_id)
+            match_ids = {p.event.match_id for p in combo}
+            if len(match_ids) != size:
+                continue
 
-    # --- Fenêtres de 3 jours consécutifs ---
-    for i in range(len(dates_sorted) - 2):
-        d1, d2, d3 = dates_sorted[i], dates_sorted[i + 1], dates_sorted[i + 2]
-        if (d2 - d1).days != 1 or (d3 - d2).days != 1:
-            continue
-        pool = by_date[d1] + by_date[d2] + by_date[d3]
-        for size in range(MIN_COMBO_SIZE, MAX_COMBO_SIZE + 1):
-            for combo in combinations(pool, size):
-                match_ids = {p.event.match_id for p in combo}
-                if len(match_ids) != size:
-                    continue
-                metrics = compute_combo(list(combo))
-                if not metrics:
-                    continue
-                if MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS and metrics["probability_sum"] >= MIN_PROB_SUM:
-                    candidates.append({
-                        "selections": combo,
-                        "dates": [d1.isoformat(), d2.isoformat(), d3.isoformat()],
-                        **metrics,
-                    })
+            metrics = compute_combo(list(combo))
+            if not metrics:
+                continue
 
-    # Trier par probabilité réelle combinée (la plus élevée d'abord)
+            if MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS and metrics["probability_sum"] >= MIN_PROB_SUM:
+                # Récupérer les dates pour l'affichage (optionnel)
+                dates = sorted({p.event.match.kickoff_at.date().isoformat() for p in combo})
+                candidates.append({
+                    "selections": combo,
+                    "dates": dates,
+                    **metrics,
+                })
+
+    # Trier par probabilité réelle combinée décroissante
     candidates.sort(key=lambda c: c["real_combined_probability"], reverse=True)
-
-    # Retourner les TOP_N_RESULTS meilleurs
     return candidates[:TOP_N_RESULTS]
