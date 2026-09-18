@@ -1,22 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Match
+from ..utils.cache import cache_memory
 
 router = APIRouter(prefix="/matches", tags=["matches"])
 
 
 @router.get("")
-def list_matches(db: Session = Depends(get_db)):
+@cache_memory(ttl_seconds=300, key="matches_list")  # 🆕 2 min → 5 min
+def list_matches(response: Response, db: Session = Depends(get_db)):
     """GET /matches"""
+    response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300, stale-while-revalidate=600"
+
     matches = db.query(Match).order_by(Match.kickoff_at).all()
     return [_serialize(m) for m in matches]
 
 
 @router.get("/{match_id}")
-def get_match(match_id: int, db: Session = Depends(get_db)):
+@cache_memory(ttl_seconds=300, key="matches_detail")  # 🆕 2 min → 5 min
+def get_match(match_id: int, response: Response, db: Session = Depends(get_db)):
     """GET /matches/:id"""
+    response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300"
+
     match = db.query(Match).filter(Match.id == match_id).first()
     if not match:
         raise HTTPException(status_code=404, detail="Match introuvable")
