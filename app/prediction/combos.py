@@ -22,7 +22,7 @@ MAX_COMBO_SIZE = 4
 MIN_TOTAL_ODDS = 3.0
 MAX_TOTAL_ODDS = 6.0
 MIN_PROB_SUM = 75.0
-TOP_N_RESULTS = 6          # 🆕 3 → 6
+TOP_N_RESULTS = 3
 
 
 def _eligible_predictions(db: Session) -> list[Prediction]:
