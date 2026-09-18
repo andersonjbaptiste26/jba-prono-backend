@@ -1,24 +1,22 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..prediction.combos import generate_ticket_combos
+from ..utils.cache import cache_memory
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 
 @router.get("/best-combo")
-def best_combo_tickets(db: Session = Depends(get_db)):
+@cache_memory(ttl_seconds=900, key="tickets_best_combo")  # 🆕 5 min → 15 min
+def best_combo_tickets(response: Response, db: Session = Depends(get_db)):
     """GET /tickets/best-combo — jusqu'à 3 combinaisons de 2 à 4 matchs
     (répartis sur deux jours consécutifs), avec une cote combinée entre
-    3 et 6, et une somme de probabilités individuelles >= 75%.
+    3 et 6, et une somme de probabilités individuelles >= 75%."""
 
-    Chaque ticket affiche deux chiffres différents :
-    - probability_sum : la somme des probabilités individuelles (le
-      critère de filtre demandé)
-    - real_combined_probability : la VRAIE chance que tout le ticket se
-      réalise (produit des probabilités) — toujours plus basse, c'est
-      la valeur honnête à regarder avant de parier."""
+    response.headers["Cache-Control"] = "public, max-age=900, s-maxage=900, stale-while-revalidate=1800"
+
     combos = generate_ticket_combos(db)
 
     results = []
