@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -40,10 +40,14 @@ def _get_or_create_anonymous_user(db: Session, user_id: str) -> str:
 
 
 @router.post("")
-def create_bet(payload: BetIn, db: Session = Depends(get_db)):
+def create_bet(payload: BetIn, response: Response, db: Session = Depends(get_db)):
     """POST /bets — construit le panier et calcule la cote totale combinée.
     Pas de montant d'argent : uniquement le suivi des sélections et de la
     cote, pour la simulation."""
+    
+    # 🚫 Jamais de cache sur un POST (crée une ressource unique)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    
     user_id = _get_or_create_anonymous_user(db, payload.user_id)
 
     events = db.query(Event).filter(Event.id.in_([s.event_id for s in payload.selections])).all()
@@ -75,8 +79,16 @@ def create_bet(payload: BetIn, db: Session = Depends(get_db)):
 
 
 @router.get("/history")
-def bet_history(user_id: str, db: Session = Depends(get_db)):
-    """GET /bets/history — historique + statistiques, sans montants d'argent."""
+def bet_history(user_id: str, response: Response, db: Session = Depends(get_db)):
+    """GET /bets/history — historique + statistiques, sans montants d'argent.
+    
+    ⚠️ Données personnelles → JAMAIS de cache.
+    Chaque utilisateur doit voir SES paris en temps réel.
+    """
+    
+    # 🚫 Interdit de cacher : données personnelles temps réel
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    
     bets = db.query(Bet).filter(Bet.user_id == user_id).order_by(Bet.created_at.desc()).all()
 
     total = len(bets)
