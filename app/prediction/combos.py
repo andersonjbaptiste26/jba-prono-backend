@@ -6,18 +6,17 @@ en tickets multiples, selon les critères :
 - 2 à 6 matchs par ticket
 - répartis sur 2 à 7 jours consécutifs
 
-Affiche aussi la VRAIE probabilité combinée (produit des probabilités,
-pas la somme) pour rester honnête — la somme demandée sert de filtre,
-mais ne représente pas la chance réelle de gagner le ticket entier.
+⚡ ALGORITHME OPTIMISÉ (DFS + élagage) :
+- Pool réduit : top 12 par jour
+- Tri par cote ASC dans chaque fenêtre
+- DFS avec double élagage :
+  1) cote courante > MAX → stop de la branche (et toutes les suivantes grâce au tri)
+  2) proba_sum + suffixe < 75% → stop (aucun espoir)
+- Limite globale de sécurité
 
-⚡ Optimisations pour éviter l'explosion combinatoire :
-- tri des prédictions par probabilité DESC dans chaque jour
-- limite adaptative du nombre de combinaisons testées par (fenêtre, taille)
-- déduplication par set d'event_id
+Résultat : ~1-3 s au lieu de plusieurs minutes.
 """
 import time
-from math import comb
-from itertools import combinations
 from collections import defaultdict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -27,17 +26,18 @@ from ..models import Prediction, Event, Match
 # ─── Critères métier ───
 MIN_INDIVIDUAL_PROB = 50.0
 MIN_COMBO_SIZE = 2
-MAX_COMBO_SIZE = 6            # 🆕 4 → 6
+MAX_COMBO_SIZE = 6
 MIN_TOTAL_ODDS = 3.0
-MAX_TOTAL_ODDS = 9.0          # 🆕 6 → 9
+MAX_TOTAL_ODDS = 9.0
 MIN_PROB_SUM = 75.0
-MIN_DAYS_WINDOW = 2           # 🆕 fenêtre minimale (jours consécutifs)
-MAX_DAYS_WINDOW = 7           # 🆕 fenêtre maximale
-TOP_N_RESULTS = 7             # 🆕 3 → 7
+MIN_DAYS_WINDOW = 2
+MAX_DAYS_WINDOW = 7
+TOP_N_RESULTS = 7
 
 # ─── Optimisations de performance ───
-MAX_COMBOS_PER_CALL = 20_000  # par (fenêtre, taille)
-MAX_POOL_HARD_CAP = 30        # taille max du pool par fenêtre
+MAX_POOL_PER_DAY = 12          # TOP 12 par jour max
+MAX_DFS_RESULTS = 2000         # limite de sécurité par fenêtre
+MAX_CANDIDATES_TOTAL = 50000   # limite globale
 
 
 def _eligible_predictions(db: Session) -> list[Prediction]:
@@ -61,54 +61,98 @@ def _group_by_date(predictions: list[Prediction]) -> dict:
     return by_date
 
 
-def _max_pool_size(max_combos: int, size: int, hard_cap: int = MAX_POOL_HARD_CAP) -> int:
-    """Trouve le plus grand n tel que C(n, size) <= max_combos."""
-    for n in range(hard_cap, size - 1, -1):
-        if comb(n, size) <= max_combos:
-            return n
-    return size
+def _dfs_search(pool, min_size, max_size, min_odds, max_odds, min_proba_sum,
+                max_results=MAX_DFS_RESULTS):
+    """
+    DFS avec élagage fort. Le pool DOIT être trié par cote ASC.
 
+    Retourne une liste de tuples :
+      (indices, total_odds, proba_sum, real_proba)
+    """
+    results = []
+    n = len(pool)
 
-def compute_combo(selections: list[Prediction]) -> dict | None:
-    """Calcule les métriques d'une combinaison (cote totale, somme probas, vraie proba)."""
-    total_odds = 1.0
-    prob_sum = 0.0
-    real_prob = 1.0
-    for p in selections:
-        odds = float(p.event.odds_value) if p.event.odds_value else None
-        if not odds:
-            return None
-        total_odds *= odds
-        prob_sum += float(p.probability)
-        real_prob *= (float(p.probability) / 100.0)
-    return {
-        "total_odds": round(total_odds, 3),
-        "probability_sum": round(prob_sum, 2),
-        "real_combined_probability": round(real_prob * 100, 2),
-    }
+    # Précalcul des cotes et probas
+    odds_list = [float(p.event.odds_value) for p in pool]
+    proba_list = [float(p.probability) for p in pool]
+
+    # Suffixe : somme des probas de i jusqu'à la fin
+    # Utilisé pour élaguer si même en prenant tout le reste on n'atteint pas 75%
+    suffix_proba = [0.0] * (n + 1)
+    for i in range(n - 1, -1, -1):
+        suffix_proba[i] = suffix_proba[i + 1] + proba_list[i]
+
+    def dfs(start, current_indices, current_odds, proba_sum, real_proba):
+        if len(results) >= max_results:
+            return
+
+        # Critère validé → ajouter aux résultats
+        if len(current_indices) >= min_size:
+            if min_odds <= current_odds <= max_odds and proba_sum >= min_proba_sum:
+                results.append((
+                    current_indices.copy(),
+                    current_odds,
+                    proba_sum,
+                    real_proba,
+                ))
+
+        # Taille max atteinte → stop
+        if len(current_indices) >= max_size:
+            return
+
+        # Explorer les éléments suivants
+        for i in range(start, n):
+            new_odds = current_odds * odds_list[i]
+
+            # 🛑 Élagage 1 : cote max dépassée
+            # Comme le pool est trié par cote ASC, tous les suivants
+            # auront une cote >= → on peut arrêter la boucle
+            if new_odds > max_odds:
+                break
+
+            # 🛑 Élagage 2 : impossible d'atteindre la proba sum minimum
+            # Même en prenant TOUS les matchs restants
+            if proba_sum + suffix_proba[i] < min_proba_sum:
+                break
+
+            # Récursion
+            current_indices.append(i)
+            dfs(
+                i + 1,
+                current_indices,
+                new_odds,
+                proba_sum + proba_list[i],
+                real_proba * (proba_list[i] / 100.0),
+            )
+            current_indices.pop()
+
+            if len(results) >= max_results:
+                return
+
+    dfs(0, [], 1.0, 0.0, 1.0)
+    return results
 
 
 def generate_ticket_combos(db: Session) -> list[dict]:
     """
     Génère jusqu'à TOP_N_RESULTS combinaisons optimales.
-
-    Parcourt toutes les fenêtres de 2 à 7 jours consécutifs, et pour
-    chacune teste les combinaisons de 2 à 6 matchs.
     """
     t0 = time.time()
 
     predictions = _eligible_predictions(db)
     by_date = _group_by_date(predictions)
-    dates_sorted = sorted(by_date.keys())
 
-    # ⚡ Tri par probabilité DESC dans chaque jour (meilleures d'abord)
+    # ⚡ On ne garde que les TOP N par jour (tri par proba DESC)
     for d in by_date:
         by_date[d].sort(key=lambda p: float(p.probability), reverse=True)
+        by_date[d] = by_date[d][:MAX_POOL_PER_DAY]
+
+    dates_sorted = sorted(by_date.keys())
 
     candidates = []
-    seen_combos = set()
+    seen_keys = set()
 
-    # ─── Boucle sur les fenêtres de 2 à 7 jours ───
+    # ─── Boucle sur les fenêtres ───
     for window_size in range(MIN_DAYS_WINDOW, MAX_DAYS_WINDOW + 1):
         for i in range(len(dates_sorted) - window_size + 1):
             window_dates = dates_sorted[i:i + window_size]
@@ -118,55 +162,61 @@ def generate_ticket_combos(db: Session) -> list[dict]:
                    for j in range(len(window_dates) - 1)):
                 continue
 
-            # Pool : toutes les prédictions des jours de la fenêtre
-            full_pool = []
+            # Construire le pool de la fenêtre
+            pool = []
             for d in window_dates:
-                full_pool.extend(by_date[d])
+                pool.extend(by_date[d])
 
-            if len(full_pool) < MIN_COMBO_SIZE:
+            if len(pool) < MIN_COMBO_SIZE:
                 continue
 
-            # ⚡ Tri global par probabilité DESC
-            full_pool.sort(key=lambda p: float(p.probability), reverse=True)
+            # ⚡ TRI CRUCIAL : par cote ASC (permet l'élagage 1)
+            pool.sort(key=lambda p: float(p.event.odds_value) if p.event.odds_value else 999.0)
 
-            # ─── Tester chaque taille de combinaison ───
-            for size in range(MIN_COMBO_SIZE, MAX_COMBO_SIZE + 1):
-                if size > len(full_pool):
+            # DFS avec élagage
+            results = _dfs_search(
+                pool,
+                MIN_COMBO_SIZE,
+                MAX_COMBO_SIZE,
+                MIN_TOTAL_ODDS,
+                MAX_TOTAL_ODDS,
+                MIN_PROB_SUM,
+                max_results=MAX_DFS_RESULTS,
+            )
+
+            # Convertir en candidats
+            for indices, total_odds, proba_sum, real_proba in results:
+                combo = [pool[idx] for idx in indices]
+
+                # Déduplication globale
+                combo_key = frozenset(p.event.id for p in combo)
+                if combo_key in seen_keys:
+                    continue
+                seen_keys.add(combo_key)
+
+                # Vérifier que tous les matchs sont distincts
+                match_ids = {p.event.match_id for p in combo}
+                if len(match_ids) != len(combo):
                     continue
 
-                # ⚡ Limite adaptative pour éviter l'explosion combinatoire
-                max_pool = _max_pool_size(MAX_COMBOS_PER_CALL, size)
-                pool = full_pool[:max_pool]
+                # Dates réellement utilisées
+                used_dates = sorted({p.event.match.kickoff_at.date() for p in combo})
 
-                for combo in combinations(pool, size):
-                    # Déduplication (évite les doublons entre fenêtres)
-                    combo_key = frozenset(p.event.id for p in combo)
-                    if combo_key in seen_combos:
-                        continue
+                candidates.append({
+                    "selections": combo,
+                    "dates": [d.isoformat() for d in used_dates],
+                    "total_odds": round(total_odds, 3),
+                    "probability_sum": round(proba_sum, 2),
+                    "real_combined_probability": round(real_proba * 100, 2),
+                })
 
-                    # Vérifier que tous les matchs sont différents
-                    match_ids = {p.event.match_id for p in combo}
-                    if len(match_ids) != size:
-                        continue
+            # Sécurité : arrêt global si trop de candidats
+            if len(candidates) >= MAX_CANDIDATES_TOTAL:
+                break
+        if len(candidates) >= MAX_CANDIDATES_TOTAL:
+            break
 
-                    metrics = compute_combo(list(combo))
-                    if not metrics:
-                        continue
-
-                    if (MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS
-                            and metrics["probability_sum"] >= MIN_PROB_SUM):
-                        seen_combos.add(combo_key)
-
-                        # Dates réellement utilisées par ce combo
-                        used_dates = sorted({p.event.match.kickoff_at.date() for p in combo})
-
-                        candidates.append({
-                            "selections": combo,
-                            "dates": [d.isoformat() for d in used_dates],
-                            **metrics,
-                        })
-
-    # Tri final : meilleure probabilité réelle en premier
+    # Tri final par probabilité réelle décroissante
     candidates.sort(key=lambda c: c["real_combined_probability"], reverse=True)
 
     elapsed = time.time() - t0
