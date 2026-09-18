@@ -1,17 +1,16 @@
 """
-Import d'une liste de matchs favoris depuis un fichier JSON, avec :
-- exclusion automatique des confrontations entre deux équipes favorites
-- mise à jour automatique du statut ('Not Yet' -> 'Finish') selon la date
+Import d'une liste de matchs favoris depuis un fichier JSON.
 """
 import os
 from datetime import date as date_type
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import MatchesBestDay, BestDay
+from ..utils.cache import cache_memory, invalidate_cache
 
 router = APIRouter(tags=["best-day"])
 
@@ -27,7 +26,7 @@ class TeamIn(BaseModel):
     championnat: str
     classement_2025: Optional[str] = None
     equipe: str
-    pays: Optional[str] = None          # <--- AJOUT
+    pays: Optional[str] = None
 
 
 class MatchIn(BaseModel):
@@ -36,7 +35,7 @@ class MatchIn(BaseModel):
     equipe_exterieur: str
     date: date_type
     heure: Optional[str] = None
-    pays: Optional[str] = None          # <--- AJOUT
+    pays: Optional[str] = None
 
 
 class ImportPayload(BaseModel):
@@ -47,9 +46,12 @@ class ImportPayload(BaseModel):
 @router.post("/admin/import-matches-json")
 def import_matches_json(
     payload: ImportPayload,
+    response: Response,
     db: Session = Depends(get_db),
     _: None = Depends(_check_token),
 ):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+
     teams_added, teams_skipped = 0, 0
     for t in payload.teams:
         exists = db.query(MatchesBestDay).filter(
@@ -63,7 +65,7 @@ def import_matches_json(
             championnat=t.championnat,
             classement_2025=t.classement_2025,
             equipe=t.equipe,
-            pays=t.pays                      # <--- AJOUT
+            pays=t.pays
         ))
         teams_added += 1
 
@@ -85,11 +87,17 @@ def import_matches_json(
             date=m.date,
             heure=m.heure,
             status="Not Yet",
-            pays=m.pays                      # <--- AJOUT
+            pays=m.pays
         ))
         matches_added += 1
 
     db.commit()
+
+    # 🔄 On invalide les caches après import
+    invalidate_cache("bestday_matches")
+    invalidate_cache("bestday_teams")
+    print("🔄 Caches Best Day invalidés après import")
+
     return {
         "teams_added": teams_added,
         "teams_deja_existantes": teams_skipped,
@@ -99,7 +107,10 @@ def import_matches_json(
 
 
 @router.get("/best-day/matches")
-def list_best_day_matches(db: Session = Depends(get_db)):
+@cache_memory(ttl_seconds=1800, key="bestday_matches")  # 🆕 10 min → 30 min
+def list_best_day_matches(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=1800, s-maxage=1800, stale-while-revalidate=3600"
+
     today = date_type.today()
 
     db.query(BestDay).filter(
@@ -128,13 +139,16 @@ def list_best_day_matches(db: Session = Depends(get_db)):
             "date": m.date.isoformat(),
             "heure": m.heure,
             "status": m.status,
-            "pays": m.pays                      # <--- AJOUT
+            "pays": m.pays
         })
     return result
 
 
 @router.get("/best-day/teams")
-def list_favorite_teams(db: Session = Depends(get_db)):
+@cache_memory(ttl_seconds=7200, key="bestday_teams")  # 🆕 30 min → 2 h
+def list_favorite_teams(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=7200, s-maxage=7200, stale-while-revalidate=14400"
+
     rows = db.query(MatchesBestDay).order_by(MatchesBestDay.championnat, MatchesBestDay.classement_2025).all()
     return [
         {
@@ -142,7 +156,7 @@ def list_favorite_teams(db: Session = Depends(get_db)):
             "championnat": r.championnat,
             "classement_2025": r.classement_2025,
             "equipe": r.equipe,
-            "pays": r.pays                      # <--- AJOUT
+            "pays": r.pays
         }
         for r in rows
     ]
