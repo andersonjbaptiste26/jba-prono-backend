@@ -1,11 +1,12 @@
 from collections import defaultdict
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, or_
 
 from ..database import get_db
 from ..models import Prediction, Event, Match, Team, Competition
 from ..prediction.narrative import build_human_summary, get_expected_goals_line
+from ..utils.cache import cache_memory
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -13,7 +14,6 @@ MAIN_THRESHOLD = 66.0
 FALLBACK_MIN = 55.0
 FALLBACK_MAX = 66.0
 
-# Liste blanche des équipes et compétitions autorisées
 ALLOWED_TEAMS = [
     "Arsenal", "Manchester City", "Manchester United", "Aston Villa",
     "FC Barcelone", "Real Madrid", "Villarreal", "Atlético de Madrid",
@@ -34,19 +34,22 @@ ALLOWED_COMPETITIONS = [
 
 
 @router.get("")
+@cache_memory(ttl_seconds=300, key="predictions_list")  # 🆕 60s → 5 min
 def list_predictions(
+    response: Response,
     min_probability: float = Query(0, ge=0, le=100),
     only_upcoming: bool = Query(True, description="Exclut les matchs déjà commencés/joués."),
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300, stale-while-revalidate=600"
+
     query = (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
         .join(Match, Event.match_id == Match.id)
         .filter(Prediction.probability >= min_probability)
     )
-    
-    # Application du filtre de la liste blanche
+
     query = query.filter(
         or_(
             Match.home_team.has(Team.name.in_(ALLOWED_TEAMS)),
@@ -57,7 +60,7 @@ def list_predictions(
 
     if only_upcoming:
         query = query.filter(Match.kickoff_at >= func.now())
-        
+
     rows = query.order_by(desc(Prediction.probability)).all()
     return [_serialize(p) for p in rows]
 
@@ -93,10 +96,14 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
 
 
 @router.get("/best")
+@cache_memory(ttl_seconds=300, key="predictions_best")  # 🆕 60s → 5 min
 def best_predictions(
+    response: Response,
     limit: int = 30,
     db: Session = Depends(get_db),
 ):
+    response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300, stale-while-revalidate=600"
+
     query = (
         db.query(Prediction)
         .join(Event, Prediction.event_id == Event.id)
@@ -104,7 +111,6 @@ def best_predictions(
         .filter(Match.kickoff_at >= func.now())
     )
 
-    # Application du filtre de la liste blanche sur les équipes et compétitions
     query = query.filter(
         or_(
             Match.home_team.has(Team.name.in_(ALLOWED_TEAMS)),
@@ -123,23 +129,18 @@ def best_predictions(
     for match_id, preds in by_match.items():
         best = max(preds, key=lambda p: p.probability)
 
-        # 1. Si la meilleure prédiction dépasse le seuil principal (>= 66%)
         if float(best.probability) >= MAIN_THRESHOLD:
             selected.append(("normal", best, None))
             continue
 
-        # 2. Vérification de la tranche 55% - 66% pour appliquer le Double Chance
         resultat_preds = [p for p in preds if p.event.type == "resultat"]
         best_resultat = max(resultat_preds, key=lambda p: p.probability) if resultat_preds else None
 
         if best_resultat and FALLBACK_MIN <= float(best_resultat.probability) < FALLBACK_MAX:
             dc = _build_double_chance(resultat_preds)
-            # On valide l'affichage SEULEMENT si le Double Chance atteint ou dépasse les 66%
             if dc and float(dc["probability"]) >= MAIN_THRESHOLD:
                 selected.append(("double_chance", dc["source_pred"], dc))
                 continue
-
-        # Si aucune des conditions strictes n'est remplie, le match est ignoré.
 
     selected.sort(key=lambda item: item[1].event.match.kickoff_at)
 
@@ -187,4 +188,4 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
         "buts_probables": buts_probables,
         "pourquoi": build_human_summary(event, p, match, buts_probables=buts_probables) if match else None,
         "explanation": p.explanation,
-    }
+        }
