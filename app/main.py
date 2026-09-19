@@ -57,3 +57,21 @@ def clear_cache(response: Response, key: str = None):
     response.headers["Cache-Control"] = "no-store"
     invalidate_cache(key)
     return {"status": "cleared", "key": key or "all"}
+
+
+#----- Beeeeeggginnnnn ----
+
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+app = FastAPI()
+
+# Monter le dossier "app" pour qu'il soit accessible via l'URL /static
+# Cela permettra d'accéder à l'image via /static/jbaprono.png
+app.mount("/static", StaticFiles(directory="app"), name="static")
+
+# Route pour servir votre page HTML
+@app.get("/")
+def read_root():
+    return FileResponse("index.html") # Modifiez si votre HTML est ailleurs
