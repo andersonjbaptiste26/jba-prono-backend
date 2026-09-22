@@ -1,51 +1,52 @@
-from fastapi import FastAPI, Request, Response
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
-from .routers import matches, predictions, teams, bets, admin, notes, auth, best_day, tickets
-from .utils.cache import cache_info, invalidate_cache
+from .database import engine
+from .routers import (
+    matches, predictions, teams, bets, admin,
+    notes, auth, best_day, tickets, notifications,
+)
 
-
-
-
-#----- Beeeeeggginnnnn ----
-
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-
-app = FastAPI()
-
-# Monter le dossier "app" pour qu'il soit accessible via l'URL /static
-# Cela permettra d'accéder à l'image via /static/jbaprono.png
-app.mount("/static", StaticFiles(directory="app"), name="static")
-
-# Route pour servir votre page HTML
-@app.get("/")
-def read_root():
-    return FileResponse("index.html") # Modifiez si votre HTML est ailleurs
+APP_VERSION = "1.0.0"
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print(f"[JBa Prono] Démarrage v{APP_VERSION}")
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("[JBa Prono] ✅ Connexion PostgreSQL OK")
+    except Exception as e:
+        print(f"[JBa Prono] ❌ Erreur PostgreSQL : {e}")
+    yield
+    print("[JBa Prono] Arrêt.")
 
-#----------
-######
-#######№
+
 app = FastAPI(
     title="JBa Prono API",
     description="Backend d'analyse statistique et prédictive des matchs de football.",
-    version="0.3.0",
+    version=APP_VERSION,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ⚠️ IMPORTANT : Le middleware no-cache a été RETIRÉ.
-#    Il écrasait tous les en-têtes Cache-Control des routes, ce qui
-#    empêchait tout cache. Chaque route définit maintenant SES PROPRES
-#    en-têtes.
+
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    return response
+
 
 app.include_router(matches.router)
 app.include_router(predictions.router)
@@ -56,29 +57,20 @@ app.include_router(notes.router)
 app.include_router(auth.router)
 app.include_router(best_day.router)
 app.include_router(tickets.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")
-def root(response: Response):
-    response.headers["Cache-Control"] = "no-store"
-    return {"status": "ok", "service": "JBa Prono API"}
+def root():
+    return {"status": "ok", "service": "JBa Prono API", "version": APP_VERSION}
 
 
 @app.get("/health")
-def health(response: Response):
-    response.headers["Cache-Control"] = "no-store"
-    return {"status": "healthy"}
-
-
-# ─── 🔧 Endpoints de debug/invalidation du cache ───
-@app.get("/_cache/info")
-def get_cache_info(response: Response):
-    response.headers["Cache-Control"] = "no-store"
-    return cache_info()
-
-
-@app.post("/_cache/clear")
-def clear_cache(response: Response, key: str = None):
-    response.headers["Cache-Control"] = "no-store"
-    invalidate_cache(key)
-    return {"status": "cleared", "key": key or "all"}
+def health():
+    db_status = "ok"
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"error: {e}"
+    return {"status": "healthy", "version": APP_VERSION, "db": db_status}
