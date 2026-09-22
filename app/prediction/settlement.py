@@ -1,18 +1,37 @@
 """
-Détermine si chaque sélection d'un pari est gagnée ou perdue, en comparant
-au résultat réel du match (nécessite que /admin/sync-results ait tourné
-avant). Crée une notification à chaque événement gagné, et une autre
-quand le pari combiné entier est définitivement gagné ou perdu.
+Détermine si chaque sélection d'un pari est gagnée ou perdue en comparant
+au résultat réel du match. Crée une notification par événement gagné,
+et une autre quand le pari entier est définitivement gagné ou perdu.
 """
+import re
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..models import Bet, BetSelection, Event, Match, Notification
 
+BUTS_RE = re.compile(r"([+-]?)\s*([\d]+(?:[.,]\d+)?)", re.IGNORECASE)
+
+
+def _parse_goals_line(label: str) -> tuple[str, float] | None:
+    """Retourne ('over'|'under', line) ou None."""
+    m = BUTS_RE.search(label)
+    if not m:
+        return None
+    sign = m.group(1)
+    try:
+        line = float(m.group(2).replace(",", "."))
+    except ValueError:
+        return None
+    if sign == "+" or label.strip().startswith("+"):
+        return ("over", line)
+    if sign == "-" or label.strip().startswith("-"):
+        return ("under", line)
+    return None
+
 
 def _evaluate_selection(selection: BetSelection) -> str | None:
-    """Retourne 'gagne', 'perdu', ou None si le match n'est pas terminé."""
-    event = selection.event
-    match = event.match
+    event: Event = selection.event
+    match: Match = event.match
     if match.status != "finished" or match.home_score is None or match.away_score is None:
         return None
 
@@ -28,13 +47,13 @@ def _evaluate_selection(selection: BetSelection) -> str | None:
 
     if event.type == "buts":
         total_goals = home + away
-        try:
-            line = float(event.label.replace("+", "").replace("-", "").replace(" buts", ""))
-        except ValueError:
+        parsed = _parse_goals_line(event.label)
+        if not parsed:
             return None
-        if event.label.startswith("+"):
+        direction, line = parsed
+        if direction == "over":
             return "gagne" if total_goals > line else "perdu"
-        if event.label.startswith("-"):
+        if direction == "under":
             return "gagne" if total_goals < line else "perdu"
 
     return None
@@ -56,15 +75,17 @@ def settle_all_bets(db: Session) -> dict:
                         db.add(Notification(
                             user_id=bet.user_id,
                             bet_id=bet.id,
-                            message=f"✅ Gagné : {match.home_team.name} vs {match.away_team.name} — {selection.event.label}",
+                            message=(
+                                f"✅ Gagné : {match.home_team.name} vs "
+                                f"{match.away_team.name} — {selection.event.label}"
+                            ),
                         ))
                         notified += 1
             results.append(selection.result)
 
-        if all(r is not None for r in results):
+        if results and all(r is not None for r in results):
             final_status = "gagne" if all(r == "gagne" for r in results) else "perdu"
             bet.status = final_status
-            from sqlalchemy import func
             bet.settled_at = func.now()
 
             emoji = "🎉" if final_status == "gagne" else "😔"
@@ -72,10 +93,17 @@ def settle_all_bets(db: Session) -> dict:
             db.add(Notification(
                 user_id=bet.user_id,
                 bet_id=bet.id,
-                message=f"{emoji} {label} — cote totale {float(bet.total_odds):.2f} ({len(bet.selections)} sélections)",
+                message=(
+                    f"{emoji} {label} — cote totale {float(bet.total_odds):.2f} "
+                    f"({len(bet.selections)} sélections)"
+                ),
             ))
             settled += 1
             notified += 1
 
     db.commit()
-    return {"bets_settled": settled, "notifications_created": notified, "bets_checked": len(bets)}
+    return {
+        "bets_settled": settled,
+        "notifications_created": notified,
+        "bets_checked": len(bets),
+    }
