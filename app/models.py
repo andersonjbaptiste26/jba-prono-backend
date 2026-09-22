@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import (
-    Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date, ForeignKey, JSON, func
+    Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date,
+    ForeignKey, JSON, func, UniqueConstraint, Index
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
@@ -20,7 +21,7 @@ class Season(Base):
 class League(Base):
     __tablename__ = "leagues"
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     country = Column(String)
     tier = Column(String)
     external_id = Column(String)
@@ -33,6 +34,7 @@ class Competition(Base):
     name = Column(String, nullable=False)
     type = Column(String)
     external_id = Column(String)
+    __table_args__ = (UniqueConstraint("league_id", "name", name="uq_competition_league_name"),)
 
 
 class Team(Base):
@@ -44,6 +46,7 @@ class Team(Base):
     country = Column(String)
     logo_url = Column(String)
     external_id = Column(String)
+    __table_args__ = (UniqueConstraint("name", "league_id", name="uq_team_name_league"),)
 
 
 class Match(Base):
@@ -62,25 +65,31 @@ class Match(Base):
     home_team = relationship("Team", foreign_keys=[home_team_id])
     away_team = relationship("Team", foreign_keys=[away_team_id])
     competition = relationship("Competition")
-    events = relationship("Event", back_populates="match")
+    events = relationship("Event", back_populates="match", cascade="all, delete-orphan")
 
 
 class Event(Base):
     __tablename__ = "events"
     id = Column(Integer, primary_key=True)
-    match_id = Column(Integer, ForeignKey("matches.id"))
+    match_id = Column(Integer, ForeignKey("matches.id"), nullable=False)
     type = Column(String, nullable=False)
     label = Column(String, nullable=False)
     odds_value = Column(Numeric(6, 2))
 
     match = relationship("Match", back_populates="events")
-    prediction = relationship("Prediction", back_populates="event", uselist=False)
+    prediction = relationship(
+        "Prediction", back_populates="event", uselist=False, cascade="all, delete-orphan"
+    )
+    __table_args__ = (
+        UniqueConstraint("match_id", "type", "label", name="uq_event_match_type_label"),
+        Index("ix_event_match_id", "match_id"),
+    )
 
 
 class Prediction(Base):
     __tablename__ = "predictions"
     id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, ForeignKey("events.id"))
+    event_id = Column(Integer, ForeignKey("events.id"), unique=True, nullable=False)
     probability = Column(Numeric(5, 2), nullable=False)
     confidence_tier = Column(String)
     model_version = Column(String)
@@ -93,7 +102,7 @@ class Prediction(Base):
 class TeamRating(Base):
     __tablename__ = "team_ratings"
     id = Column(Integer, primary_key=True)
-    team_id = Column(Integer, ForeignKey("teams.id"))
+    team_id = Column(Integer, ForeignKey("teams.id"), unique=True, nullable=False)
     league_id = Column(Integer, ForeignKey("leagues.id"))
     rating = Column(Numeric(6, 3), nullable=False)
     form_score = Column(Numeric(5, 2))
@@ -124,6 +133,7 @@ class TeamStatistics(Base):
     home_wins = Column(Integer, default=0)
     away_wins = Column(Integer, default=0)
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    __table_args__ = (UniqueConstraint("team_id", "competition_id", name="uq_teamstats_team_comp"),)
 
 
 class Odds(Base):
@@ -141,7 +151,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True, default="")
     display_name = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
@@ -157,7 +167,7 @@ class Bet(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     settled_at = Column(TIMESTAMP(timezone=True))
 
-    selections = relationship("BetSelection", back_populates="bet")
+    selections = relationship("BetSelection", back_populates="bet", cascade="all, delete-orphan")
 
 
 class BetSelection(Base):
@@ -192,6 +202,7 @@ class InvitationCode(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     used_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
+
 class DailyNote(Base):
     __tablename__ = "daily_notes"
     id = Column(Integer, primary_key=True)
@@ -202,9 +213,7 @@ class DailyNote(Base):
     bet_statut = Column(String)
     argent = Column(Numeric(12, 2))
     notebook = Column(String)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now()) 
-
-
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
 class MatchesBestDay(Base):
@@ -213,7 +222,7 @@ class MatchesBestDay(Base):
     championnat = Column(String, nullable=False)
     classement_2025 = Column(String)
     equipe = Column(String, nullable=False)
-    pays = Column(String)  # Nouvelle colonne ajoutée
+    pays = Column(String)
 
 
 class BestDay(Base):
@@ -225,4 +234,4 @@ class BestDay(Base):
     date = Column(Date, nullable=False)
     heure = Column(String)
     status = Column(String, default="Not Yet")
-    pays = Column(String)  # Nouvelle colonne ajoutée
+    pays = Column(String)
