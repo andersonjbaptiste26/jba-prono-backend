@@ -1,13 +1,9 @@
 """
-Combine des pronostics de deux jours consécutifs en tickets multiples,
-selon les critères :
+Combine des pronostics de deux jours consécutifs en tickets multiples.
 - cote combinée entre 3 et 6
 - somme des probabilités individuelles >= 75%
 - 2 à 4 matchs par ticket
-
-Affiche aussi la VRAIE probabilité combinée (produit des probabilités,
-pas la somme) pour rester honnête — la somme demandée sert de filtre,
-mais ne représente pas la chance réelle de gagner le ticket entier.
+- uniquement les paris 'resultat' (1/X/2) pour homogénéité
 """
 from itertools import combinations
 from collections import defaultdict
@@ -31,6 +27,7 @@ def _eligible_predictions(db: Session) -> list[Prediction]:
         .join(Event, Prediction.event_id == Event.id)
         .join(Match, Event.match_id == Match.id)
         .filter(Prediction.probability >= MIN_INDIVIDUAL_PROB)
+        .filter(Event.type == "resultat")
         .filter(Match.kickoff_at >= func.now())
         .all()
     )
@@ -86,7 +83,10 @@ def generate_ticket_combos(db: Session) -> list[dict]:
                 if not metrics:
                     continue
 
-                if MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS and metrics["probability_sum"] >= MIN_PROB_SUM:
+                if (
+                    MIN_TOTAL_ODDS <= metrics["total_odds"] <= MAX_TOTAL_ODDS
+                    and metrics["probability_sum"] >= MIN_PROB_SUM
+                ):
                     candidates.append({
                         "selections": combo,
                         "dates": [d1.isoformat(), d2.isoformat()],
