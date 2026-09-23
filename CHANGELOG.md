@@ -1,3 +1,31 @@
+## [0.1.0] — Update journal + Double Chance
+
+### Ajouté
+- **Onglet Journal** (front) : notes de match locales, isolées par `user_id`,
+  avec boutons flottants (+) pour ajouter et (💬) pour consulter.
+  Chaque note contient : date, pays, équipe, données du match.
+  Plusieurs notes possibles pour le même jour, triées par date décroissante.
+- **Module `app/prediction/double_chance.py`** : calcul officiel des cotes
+  Double Chance (1X / X2 / 12) via la formule bookmaker
+  `O_AB = (O_A × O_B) / (O_A + O_B)`, avec application d'une marge
+  (overround) configurable via `taux_marge` (défaut 0.95 = marge 5 %).
+
+### Modifié
+- **Cotes Double Chance** dans `/predictions/best` : passent de la cote
+  probabiliste (`100 / prob`) à la **cote bookmaker réaliste**
+  `cote_double_chance(O_A, O_B, marge=0.95)`.
+  L'`explanation` expose désormais `formule`, `odd_source_a` et
+  `odd_source_b` pour la traçabilité.
+- **Panier (front)** : rafraîchit cotes et probabilités au moment de
+  la validation (`validerPari`) avant envoi au backend.
+- **Historique (front)** : affiche le `%` de probabilité au moment du
+  pari à côté de chaque sélection.
+
+### Supprimé
+- **Onglet "Tickets"** (front) — remplacé par Journal.
+  L'endpoint `/tickets/best-combo` reste disponible côté API pour
+  un usage futur.
+
 # Changelog — JBa Prono
 
 ## [1.0.0] — 2026
