@@ -66,3 +66,9 @@ Options courantes pour la phase 3 :
 
 Il faudra choisir une API, créer un module `app/ingestion/` qui interroge
 cette API et remplit les tables `matches`, `teams`, `team_statistics`, `odds`.
+# JBa Prono — Backend v1.0.0
+
+API FastAPI + PostgreSQL pour l'analyse statistique et prédictive de matchs
+de football.
+
+## Architecture
