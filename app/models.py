@@ -170,11 +170,15 @@ class Bet(Base):
     selections = relationship("BetSelection", back_populates="bet", cascade="all, delete-orphan")
 
 
+#-version 0.1.0 -- new update 23-sept-2026 
 class BetSelection(Base):
     __tablename__ = "bet_selections"
     id = Column(Integer, primary_key=True)
     bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"))
     event_id = Column(Integer, ForeignKey("events.id"))
+    # Instantané du pari au moment du clic (Option A : "ce que tu vois = ce qui est enregistré")
+    event_type = Column(String, nullable=True)     # "resultat" | "buts" | "double_chance"
+    event_label = Column(String, nullable=True)    # ex. "1X — Domicile ou Nul"
     odds_value = Column(Numeric(6, 2), nullable=False)
     probability_at_bet = Column(Numeric(5, 2))
     result = Column(String, nullable=True)
