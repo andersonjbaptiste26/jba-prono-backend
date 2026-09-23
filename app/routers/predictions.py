@@ -8,6 +8,7 @@ from sqlalchemy import desc, func
 from ..database import get_db
 from ..models import Prediction, Event, Match
 from ..prediction.narrative import build_human_summary, get_expected_goals_line
+from ..prediction.double_chance import cote_double_chance
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -15,7 +16,11 @@ MAIN_THRESHOLD = 66.0
 FALLBACK_MIN = 55.0
 FALLBACK_MAX = 66.0
 
-# Noms tels que renvoyés par The Odds API / football-data.org
+# Marge bookmaker appliquée aux cotes DC (5 % → cote réaliste affichée
+# par un opérateur, plutôt que la cote équitable théorique).
+DOUBLE_CHANCE_MARGIN = 0.95
+
+# Liste blanche (noms tels que renvoyés par The Odds API / football-data.org)
 ALLOWED_TEAMS = [
     "Arsenal", "Manchester City", "Manchester United", "Aston Villa",
     "Barcelona", "Real Madrid", "Villarreal", "Atletico Madrid",
@@ -90,6 +95,20 @@ def list_predictions(
 
 
 def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
+    """
+    Construit une sélection Double Chance (1X ou X2).
+
+    Amélioration v0.1 :
+      - Cote calculée via la formule officielle bookmaker :
+            O_1X = (O_1 × O_X) / (O_1 + O_X)
+        (implémentée dans app/prediction/double_chance.py)
+      - Marge de 5 % appliquée pour refléter la cote réelle
+        qu'un bookmaker afficherait.
+
+    Si les cotes bookmaker des 2 sous-événements sont manquantes,
+    on retombe sur une estimation basée sur la probabilité combinée
+    (avec la même marge).
+    """
     by_prefix = {}
     for p in resultat_preds:
         label = p.event.label
@@ -103,20 +122,37 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
     if "X" not in by_prefix:
         return None
 
+    def _make_option(a_pred: Prediction, b_pred: Prediction, label: str) -> dict:
+        prob = min(float(a_pred.probability) + float(b_pred.probability), 100.0)
+
+        a_odds = float(a_pred.event.odds_value) if a_pred.event.odds_value else None
+        b_odds = float(b_pred.event.odds_value) if b_pred.event.odds_value else None
+
+        if a_odds and b_odds:
+            dc_odds = cote_double_chance(a_odds, b_odds, DOUBLE_CHANCE_MARGIN)
+        else:
+            dc_odds = round((100.0 / prob) * DOUBLE_CHANCE_MARGIN, 2) if prob > 0 else None
+
+        return {
+            "label": label,
+            "probability": round(prob, 2),
+            "odds": dc_odds,
+            "source_pred": a_pred,
+            "odd_source_a": a_odds,
+            "odd_source_b": b_odds,
+            "formule": "bookmaker" if (a_odds and b_odds) else "probabiliste",
+        }
+
     options = []
     if "1" in by_prefix:
-        prob = min(float(by_prefix["1"].probability) + float(by_prefix["X"].probability), 100.0)
-        options.append(("1X — Domicile ou Nul", prob, by_prefix["1"]))
+        options.append(_make_option(by_prefix["1"], by_prefix["X"], "1X — Domicile ou Nul"))
     if "2" in by_prefix:
-        prob = min(float(by_prefix["2"].probability) + float(by_prefix["X"].probability), 100.0)
-        options.append(("X2 — Nul ou Extérieur", prob, by_prefix["2"]))
+        options.append(_make_option(by_prefix["2"], by_prefix["X"], "X2 — Nul ou Extérieur"))
 
     if not options:
         return None
 
-    label, prob, source_pred = max(options, key=lambda o: o[1])
-    odds = round(100.0 / prob, 2) if prob > 0 else None
-    return {"label": label, "probability": round(prob, 2), "odds": odds, "source_pred": source_pred}
+    return max(options, key=lambda o: o["probability"])
 
 
 @router.get("/best")
@@ -186,7 +222,19 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
             "confidence_tier": None,
             "odds": double_chance["odds"],
             "pourquoi": human_pourquoi,
-            "explanation": {"cote_calculee": True, "note": "Cote estimée, pas une cote bookmaker."},
+            "explanation": {
+                "cote_calculee": True,
+                "formule": double_chance.get("formule"),
+                "note": (
+                    "Cote calculée via la formule bookmaker "
+                    "O_1X = (O_1 × O_X) / (O_1 + O_X), avec marge de 5 %."
+                    if double_chance.get("formule") == "bookmaker"
+                    else "Cote estimée à partir de la probabilité combinée "
+                         "(cotes sources manquantes)."
+                ),
+                "odd_source_a": double_chance.get("odd_source_a"),
+                "odd_source_b": double_chance.get("odd_source_b"),
+            },
         })
         return base
 
