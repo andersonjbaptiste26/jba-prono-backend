@@ -1,7 +1,10 @@
 """
 Détermine si chaque sélection d'un pari est gagnée ou perdue en comparant
-au résultat réel du match. Crée une notification par événement gagné,
-et une autre quand le pari entier est définitivement gagné ou perdu.
+au résultat réel du match. Gère les types : "resultat", "buts", "double_chance".
+
+Le règlement utilise le LABEL INSTANTANÉ stocké dans BetSelection
+(celui que l'utilisateur a vu au moment du clic), pas le label actuel
+de l'Event en DB — cela garantit la cohérence.
 """
 import re
 from sqlalchemy import func
@@ -29,25 +32,58 @@ def _parse_goals_line(label: str) -> tuple[str, float] | None:
     return None
 
 
+def _evaluate_resultat(label: str, home: int, away: int) -> str | None:
+    """Évalue un pari 1/X/2 simple."""
+    if label.startswith("1"):
+        return "gagne" if home > away else "perdu"
+    if label.startswith("X"):
+        return "gagne" if home == away else "perdu"
+    if label.startswith("2"):
+        return "gagne" if away > home else "perdu"
+    return None
+
+
+def _evaluate_double_chance(label: str, home: int, away: int) -> str | None:
+    """
+    Évalue un pari double chance :
+      - 1X : gagné si victoire domicile OU match nul
+      - X2 : gagné si match nul OU victoire extérieur
+      - 12 : gagné si victoire domicile OU victoire extérieur
+    """
+    up = label.upper()
+    # Détection insensible à la casse/espaces
+    if "1X" in up:
+        return "gagne" if home >= away else "perdu"
+    if "X2" in up:
+        return "gagne" if away >= home else "perdu"
+    if "12" in up:
+        return "gagne" if home != away else "perdu"
+    return None
+
+
 def _evaluate_selection(selection: BetSelection) -> str | None:
     event: Event = selection.event
+    if not event or not event.match:
+        return None
     match: Match = event.match
     if match.status != "finished" or match.home_score is None or match.away_score is None:
         return None
 
     home, away = match.home_score, match.away_score
 
-    if event.type == "resultat":
-        if event.label.startswith("1"):
-            return "gagne" if home > away else "perdu"
-        if event.label.startswith("X"):
-            return "gagne" if home == away else "perdu"
-        if event.label.startswith("2"):
-            return "gagne" if away > home else "perdu"
+    # Le label instantané prime (celui vu par l'utilisateur au moment du clic)
+    label = selection.event_label or event.label
+    etype = selection.event_type or event.type
 
-    if event.type == "buts":
+    if etype == "double_chance":
+        return _evaluate_double_chance(label, home, away)
+
+    if etype == "resultat":
+        return _evaluate_resultat(label, home, away)
+
+    if etype == "buts":
         total_goals = home + away
-        parsed = _parse_goals_line(event.label)
+        parsed = _parse_goals_line(label)
         if not parsed:
             return None
         direction, line = parsed
@@ -77,7 +113,8 @@ def settle_all_bets(db: Session) -> dict:
                             bet_id=bet.id,
                             message=(
                                 f"✅ Gagné : {match.home_team.name} vs "
-                                f"{match.away_team.name} — {selection.event.label}"
+                                f"{match.away_team.name} — "
+                                f"{selection.event_label or selection.event.label}"
                             ),
                         ))
                         notified += 1
