@@ -5,17 +5,20 @@ au résultat réel du match. Gère les types : "resultat", "buts", "double_chanc
 Le règlement utilise le LABEL INSTANTANÉ stocké dans BetSelection
 (celui que l'utilisateur a vu au moment du clic), pas le label actuel
 de l'Event en DB — cela garantit la cohérence.
+
+Note : le système de notifications a été retiré. Le règlement se contente
+de marquer les sélections et les paris comme gagnés/perdus.
 """
 import re
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models import Bet, BetSelection, Event, Match, Notification
+from ..models import Bet, BetSelection, Event, Match
 
 BUTS_RE = re.compile(r"([+-]?)\s*([\d]+(?:[.,]\d+)?)", re.IGNORECASE)
 
 
-def _parse_goals_line(label: str) -> tuple[str, float] | None:
+def _parse_goals_line(label: str):
     """Retourne ('over'|'under', line) ou None."""
     m = BUTS_RE.search(label)
     if not m:
@@ -32,8 +35,7 @@ def _parse_goals_line(label: str) -> tuple[str, float] | None:
     return None
 
 
-def _evaluate_resultat(label: str, home: int, away: int) -> str | None:
-    """Évalue un pari 1/X/2 simple."""
+def _evaluate_resultat(label, home, away):
     if label.startswith("1"):
         return "gagne" if home > away else "perdu"
     if label.startswith("X"):
@@ -43,15 +45,8 @@ def _evaluate_resultat(label: str, home: int, away: int) -> str | None:
     return None
 
 
-def _evaluate_double_chance(label: str, home: int, away: int) -> str | None:
-    """
-    Évalue un pari double chance :
-      - 1X : gagné si victoire domicile OU match nul
-      - X2 : gagné si match nul OU victoire extérieur
-      - 12 : gagné si victoire domicile OU victoire extérieur
-    """
+def _evaluate_double_chance(label, home, away):
     up = label.upper()
-    # Détection insensible à la casse/espaces
     if "1X" in up:
         return "gagne" if home >= away else "perdu"
     if "X2" in up:
@@ -61,7 +56,7 @@ def _evaluate_double_chance(label: str, home: int, away: int) -> str | None:
     return None
 
 
-def _evaluate_selection(selection: BetSelection) -> str | None:
+def _evaluate_selection(selection: BetSelection):
     event: Event = selection.event
     if not event or not event.match:
         return None
@@ -70,17 +65,13 @@ def _evaluate_selection(selection: BetSelection) -> str | None:
         return None
 
     home, away = match.home_score, match.away_score
-
-    # Le label instantané prime (celui vu par l'utilisateur au moment du clic)
     label = selection.event_label or event.label
     etype = selection.event_type or event.type
 
     if etype == "double_chance":
         return _evaluate_double_chance(label, home, away)
-
     if etype == "resultat":
         return _evaluate_resultat(label, home, away)
-
     if etype == "buts":
         total_goals = home + away
         parsed = _parse_goals_line(label)
@@ -91,13 +82,12 @@ def _evaluate_selection(selection: BetSelection) -> str | None:
             return "gagne" if total_goals > line else "perdu"
         if direction == "under":
             return "gagne" if total_goals < line else "perdu"
-
     return None
 
 
 def settle_all_bets(db: Session) -> dict:
     bets = db.query(Bet).filter(Bet.status == "en_cours").all()
-    settled, notified = 0, 0
+    settled = 0
 
     for bet in bets:
         results = []
@@ -106,41 +96,16 @@ def settle_all_bets(db: Session) -> dict:
                 outcome = _evaluate_selection(selection)
                 if outcome:
                     selection.result = outcome
-                    if outcome == "gagne":
-                        match = selection.event.match
-                        db.add(Notification(
-                            user_id=bet.user_id,
-                            bet_id=bet.id,
-                            message=(
-                                f"✅ Gagné : {match.home_team.name} vs "
-                                f"{match.away_team.name} — "
-                                f"{selection.event_label or selection.event.label}"
-                            ),
-                        ))
-                        notified += 1
             results.append(selection.result)
 
         if results and all(r is not None for r in results):
             final_status = "gagne" if all(r == "gagne" for r in results) else "perdu"
             bet.status = final_status
             bet.settled_at = func.now()
-
-            emoji = "🎉" if final_status == "gagne" else "😔"
-            label = "Pari gagné" if final_status == "gagne" else "Pari perdu"
-            db.add(Notification(
-                user_id=bet.user_id,
-                bet_id=bet.id,
-                message=(
-                    f"{emoji} {label} — cote totale {float(bet.total_odds):.2f} "
-                    f"({len(bet.selections)} sélections)"
-                ),
-            ))
             settled += 1
-            notified += 1
 
     db.commit()
     return {
         "bets_settled": settled,
-        "notifications_created": notified,
         "bets_checked": len(bets),
     }
