@@ -5,11 +5,12 @@ from sqlalchemy import text
 
 from .database import engine
 from .routers import (
-    matches, predictions, teams, bets, admin,
-    notes, auth, best_day, tickets,
+    matches, predictions, teams, admin,
+    notes, auth, best_day, tickets, results,
 )
+# `bets` retiré : paris gérés en localStorage depuis v0.3.0
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 
 
 @asynccontextmanager
@@ -51,12 +52,13 @@ async def add_no_cache_headers(request: Request, call_next):
 app.include_router(matches.router)
 app.include_router(predictions.router)
 app.include_router(teams.router)
-app.include_router(bets.router)
 app.include_router(admin.router)
 app.include_router(notes.router)
 app.include_router(auth.router)
 app.include_router(best_day.router)
 app.include_router(tickets.router)
+app.include_router(results.router)
+# app.include_router(bets.router)  # DÉPRÉCIÉ v0.3.0
 
 
 @app.get("/")
