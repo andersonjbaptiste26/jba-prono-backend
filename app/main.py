@@ -6,10 +6,10 @@ from sqlalchemy import text
 from .database import engine
 from .routers import (
     matches, predictions, teams, bets, admin,
-    notes, auth, best_day, tickets, notifications,
+    notes, auth, best_day, tickets,
 )
 
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.2.0"
 
 
 @asynccontextmanager
@@ -57,7 +57,6 @@ app.include_router(notes.router)
 app.include_router(auth.router)
 app.include_router(best_day.router)
 app.include_router(tickets.router)
-app.include_router(notifications.router)
 
 
 @app.get("/")
