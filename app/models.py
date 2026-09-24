@@ -187,15 +187,6 @@ class BetSelection(Base):
     event = relationship("Event")
 
 
-class Notification(Base):
-    __tablename__ = "notifications"
-    id = Column(Integer, primary_key=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"), nullable=True)
-    message = Column(String, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    read = Column(Boolean, default=False)
-
 
 class InvitationCode(Base):
     __tablename__ = "invitation_codes"
