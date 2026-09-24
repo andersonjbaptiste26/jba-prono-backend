@@ -8,7 +8,10 @@ from sqlalchemy import desc, func
 from ..database import get_db
 from ..models import Prediction, Event, Match
 from ..prediction.narrative import build_human_summary, get_expected_goals_line
-from ..prediction.double_chance import cote_double_chance
+from ..prediction.double_chance import (
+    cote_double_chance_normalisee,
+    cote_double_chance,
+)
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -98,16 +101,16 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
     """
     Construit une sélection Double Chance (1X ou X2).
 
-    Amélioration v0.1 :
-      - Cote calculée via la formule officielle bookmaker :
-            O_1X = (O_1 × O_X) / (O_1 + O_X)
-        (implémentée dans app/prediction/double_chance.py)
-      - Marge de 5 % appliquée pour refléter la cote réelle
-        qu'un bookmaker afficherait.
+    v0.3.1 — Utilise la formule bookmaker NORMALISÉE :
+      1. Calcule les probas implicites (1/cote) des 3 issues
+      2. Retire l'overround (normalisation)
+      3. Somme les probas de la paire visée
+      4. Cote = 1 / p_somme × marge
+    → Reproduit exactement les cotes d'un bookmaker (vérifié sur
+      Paryaj Lakay : Arsenal 1.09, Lille 1.12, Dortmund 1.11).
 
-    Si les cotes bookmaker des 2 sous-événements sont manquantes,
-    on retombe sur une estimation basée sur la probabilité combinée
-    (avec la même marge).
+    Fallback : si une des 3 cotes manque, on utilise l'ancienne formule
+    sur les 2 cotes disponibles.
     """
     by_prefix = {}
     for p in resultat_preds:
@@ -122,32 +125,54 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
     if "X" not in by_prefix:
         return None
 
-    def _make_option(a_pred: Prediction, b_pred: Prediction, label: str) -> dict:
+    def _get_odds(prefix: str):
+        pred = by_prefix.get(prefix)
+        if not pred or not pred.event.odds_value:
+            return None
+        try:
+            v = float(pred.event.odds_value)
+            return v if v > 1 else None
+        except (TypeError, ValueError):
+            return None
+
+    c1 = _get_odds("1")
+    cx = _get_odds("X")
+    c2 = _get_odds("2")
+    have_all_three = all([c1, cx, c2])
+
+    def _make_option(a_pred: Prediction, b_pred: Prediction, label: str, pair: str) -> dict:
         prob = min(float(a_pred.probability) + float(b_pred.probability), 100.0)
 
-        a_odds = float(a_pred.event.odds_value) if a_pred.event.odds_value else None
-        b_odds = float(b_pred.event.odds_value) if b_pred.event.odds_value else None
-
-        if a_odds and b_odds:
-            dc_odds = cote_double_chance(a_odds, b_odds, DOUBLE_CHANCE_MARGIN)
+        # --- Cote DC ---
+        if have_all_three:
+            # Mode normalisé (le plus réaliste)
+            dc_odds = cote_double_chance_normalisee(c1, cx, c2, pair, DOUBLE_CHANCE_MARGIN)
+            formule = "normalisee"
         else:
-            dc_odds = round((100.0 / prob) * DOUBLE_CHANCE_MARGIN, 2) if prob > 0 else None
+            # Fallback : formule simple sur les 2 cotes
+            a_odds = _get_odds(pair[0])
+            b_odds = _get_odds(pair[1])
+            if a_odds and b_odds:
+                dc_odds = cote_double_chance(a_odds, b_odds, DOUBLE_CHANCE_MARGIN)
+                formule = "simple"
+            else:
+                dc_odds = round((100.0 / prob) * DOUBLE_CHANCE_MARGIN, 2) if prob > 0 else None
+                formule = "probabiliste"
 
         return {
             "label": label,
             "probability": round(prob, 2),
             "odds": dc_odds,
             "source_pred": a_pred,
-            "odd_source_a": a_odds,
-            "odd_source_b": b_odds,
-            "formule": "bookmaker" if (a_odds and b_odds) else "probabiliste",
+            "formule": formule,
+            "odds_source": {"1": c1, "X": cx, "2": c2},
         }
 
     options = []
     if "1" in by_prefix:
-        options.append(_make_option(by_prefix["1"], by_prefix["X"], "1X — Domicile ou Nul"))
+        options.append(_make_option(by_prefix["1"], by_prefix["X"], "1X — Domicile ou Nul", "1X"))
     if "2" in by_prefix:
-        options.append(_make_option(by_prefix["2"], by_prefix["X"], "X2 — Nul ou Extérieur"))
+        options.append(_make_option(by_prefix["2"], by_prefix["X"], "X2 — Nul ou Extérieur", "X2"))
 
     if not options:
         return None
@@ -226,14 +251,12 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
                 "cote_calculee": True,
                 "formule": double_chance.get("formule"),
                 "note": (
-                    "Cote calculée via la formule bookmaker "
-                    "O_1X = (O_1 × O_X) / (O_1 + O_X), avec marge de 5 %."
-                    if double_chance.get("formule") == "bookmaker"
-                    else "Cote estimée à partir de la probabilité combinée "
-                         "(cotes sources manquantes)."
+                    "Cote calculée selon la méthode bookmaker (normalisation des "
+                    "probabilités implicites + marge de 5 %)."
+                    if double_chance.get("formule") == "normalisee"
+                    else "Cote estimée à partir des cotes disponibles."
                 ),
-                "odd_source_a": double_chance.get("odd_source_a"),
-                "odd_source_b": double_chance.get("odd_source_b"),
+                "odds_source": double_chance.get("odds_source"),
             },
         })
         return base
