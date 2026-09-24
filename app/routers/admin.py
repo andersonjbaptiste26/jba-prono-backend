@@ -8,7 +8,7 @@ from ..ingestion.sync import sync_all_leagues
 from ..ingestion.sync_stats import sync_all_team_stats
 from ..ingestion.results import sync_all_results
 from ..prediction.engine import generate_all_predictions
-from ..prediction.settlement import settle_all_bets
+# from ..prediction.settlement import settle_all_bets  # DÉPRÉCIÉ v0.3.0
 from ..models import InvitationCode
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -74,6 +74,10 @@ def sync_results(db: Session = Depends(get_db), _: None = Depends(_check_token))
     return {"results": sync_all_results(db)}
 
 
-@router.post("/settle-bets")
-def settle_bets(db: Session = Depends(get_db), _: None = Depends(_check_token)):
-    return settle_all_bets(db)
+# @router.post("/settle-bets")
+# def settle_bets(db: Session = Depends(get_db), _: None = Depends(_check_token)):
+#     """
+#     DÉPRÉCIÉ v0.3.0 — Le règlement se fait désormais côté client.
+#     Conservé en commentaire pour référence.
+#     """
+#     return settle_all_bets(db)
