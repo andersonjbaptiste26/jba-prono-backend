@@ -156,38 +156,6 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
-class Bet(Base):
-    __tablename__ = "bets"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    stake = Column(Numeric(10, 2), nullable=True)
-    total_odds = Column(Numeric(8, 3), nullable=False)
-    potential_gain = Column(Numeric(10, 2), nullable=True)
-    status = Column(String, default="en_cours")
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    settled_at = Column(TIMESTAMP(timezone=True))
-
-    selections = relationship("BetSelection", back_populates="bet", cascade="all, delete-orphan")
-
-
-#-version 0.1.0 -- new update 23-sept-2026 
-class BetSelection(Base):
-    __tablename__ = "bet_selections"
-    id = Column(Integer, primary_key=True)
-    bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"))
-    event_id = Column(Integer, ForeignKey("events.id"))
-    # Instantané du pari au moment du clic (Option A : "ce que tu vois = ce qui est enregistré")
-    event_type = Column(String, nullable=True)     # "resultat" | "buts" | "double_chance"
-    event_label = Column(String, nullable=True)    # ex. "1X — Domicile ou Nul"
-    odds_value = Column(Numeric(6, 2), nullable=False)
-    probability_at_bet = Column(Numeric(5, 2))
-    result = Column(String, nullable=True)
-
-    bet = relationship("Bet", back_populates="selections")
-    event = relationship("Event")
-
-
-
 class InvitationCode(Base):
     __tablename__ = "invitation_codes"
     id = Column(Integer, primary_key=True)
@@ -230,3 +198,46 @@ class BestDay(Base):
     heure = Column(String)
     status = Column(String, default="Not Yet")
     pays = Column(String)
+
+
+# ============================================================================
+# DÉPRÉCIÉ depuis v0.3.0 — Paris gérés en localStorage côté client.
+# Les 3 classes ci-dessous sont conservées en commentaire pour référence.
+# Les tables existent toujours en DB (pas de DROP) mais ne sont plus lues.
+# ============================================================================
+#
+# class Bet(Base):
+#     __tablename__ = "bets"
+#     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+#     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+#     stake = Column(Numeric(10, 2), nullable=True)
+#     total_odds = Column(Numeric(8, 3), nullable=False)
+#     potential_gain = Column(Numeric(10, 2), nullable=True)
+#     status = Column(String, default="en_cours")
+#     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+#     settled_at = Column(TIMESTAMP(timezone=True))
+#     selections = relationship("BetSelection", back_populates="bet", cascade="all, delete-orphan")
+#
+#
+# class BetSelection(Base):
+#     __tablename__ = "bet_selections"
+#     id = Column(Integer, primary_key=True)
+#     bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"))
+#     event_id = Column(Integer, ForeignKey("events.id"))
+#     event_type = Column(String, nullable=True)
+#     event_label = Column(String, nullable=True)
+#     odds_value = Column(Numeric(6, 2), nullable=False)
+#     probability_at_bet = Column(Numeric(5, 2))
+#     result = Column(String, nullable=True)
+#     bet = relationship("Bet", back_populates="selections")
+#     event = relationship("Event")
+#
+#
+# class Notification(Base):
+#     __tablename__ = "notifications"
+#     id = Column(Integer, primary_key=True)
+#     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+#     bet_id = Column(UUID(as_uuid=True), ForeignKey("bets.id"), nullable=True)
+#     message = Column(String, nullable=False)
+#     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+#     read = Column(Boolean, default=False)
