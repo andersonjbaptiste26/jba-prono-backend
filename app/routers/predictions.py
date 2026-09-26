@@ -12,18 +12,15 @@ from ..prediction.double_chance import (
     cote_double_chance_normalisee,
     cote_double_chance,
 )
+from ..cache import cached, match_still_visible
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 MAIN_THRESHOLD = 66.0
 FALLBACK_MIN = 55.0
 FALLBACK_MAX = 66.0
-
-# Marge bookmaker appliquée aux cotes DC (5 % → cote réaliste affichée
-# par un opérateur, plutôt que la cote équitable théorique).
 DOUBLE_CHANCE_MARGIN = 0.95
 
-# Liste blanche (noms tels que renvoyés par The Odds API / football-data.org)
 ALLOWED_TEAMS = [
     "Arsenal", "Manchester City", "Manchester United", "Aston Villa",
     "Barcelona", "Real Madrid", "Villarreal", "Atletico Madrid",
@@ -77,7 +74,15 @@ def _match_allowed(match: Match) -> bool:
     return _team_allowed(home) or _team_allowed(away)
 
 
+def _visible_and_allowed(p: Prediction) -> bool:
+    """Filtre combiné : whitelist équipes/compétitions + match encore visible."""
+    if not p.event or not p.event.match:
+        return False
+    return _match_allowed(p.event.match) and match_still_visible(p.event.match)
+
+
 @router.get("")
+@cached(ttl_seconds=1500, prefix="predictions_list")
 def list_predictions(
     min_probability: float = Query(0, ge=0, le=100),
     only_upcoming: bool = Query(True),
@@ -93,25 +98,11 @@ def list_predictions(
         query = query.filter(Match.kickoff_at >= func.now())
 
     rows = query.order_by(desc(Prediction.probability)).all()
-    rows = [p for p in rows if _match_allowed(p.event.match)]
+    rows = [p for p in rows if _visible_and_allowed(p)]
     return [_serialize(p) for p in rows]
 
 
 def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
-    """
-    Construit une sélection Double Chance (1X ou X2).
-
-    v0.3.1 — Utilise la formule bookmaker NORMALISÉE :
-      1. Calcule les probas implicites (1/cote) des 3 issues
-      2. Retire l'overround (normalisation)
-      3. Somme les probas de la paire visée
-      4. Cote = 1 / p_somme × marge
-    → Reproduit exactement les cotes d'un bookmaker (vérifié sur
-      Paryaj Lakay : Arsenal 1.09, Lille 1.12, Dortmund 1.11).
-
-    Fallback : si une des 3 cotes manque, on utilise l'ancienne formule
-    sur les 2 cotes disponibles.
-    """
     by_prefix = {}
     for p in resultat_preds:
         label = p.event.label
@@ -140,16 +131,12 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
     c2 = _get_odds("2")
     have_all_three = all([c1, cx, c2])
 
-    def _make_option(a_pred: Prediction, b_pred: Prediction, label: str, pair: str) -> dict:
+    def _make_option(a_pred, b_pred, label, pair):
         prob = min(float(a_pred.probability) + float(b_pred.probability), 100.0)
-
-        # --- Cote DC ---
         if have_all_three:
-            # Mode normalisé (le plus réaliste)
             dc_odds = cote_double_chance_normalisee(c1, cx, c2, pair, DOUBLE_CHANCE_MARGIN)
             formule = "normalisee"
         else:
-            # Fallback : formule simple sur les 2 cotes
             a_odds = _get_odds(pair[0])
             b_odds = _get_odds(pair[1])
             if a_odds and b_odds:
@@ -158,7 +145,6 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
             else:
                 dc_odds = round((100.0 / prob) * DOUBLE_CHANCE_MARGIN, 2) if prob > 0 else None
                 formule = "probabiliste"
-
         return {
             "label": label,
             "probability": round(prob, 2),
@@ -176,11 +162,11 @@ def _build_double_chance(resultat_preds: list[Prediction]) -> dict | None:
 
     if not options:
         return None
-
     return max(options, key=lambda o: o["probability"])
 
 
 @router.get("/best")
+@cached(ttl_seconds=1500, prefix="predictions_best")
 def best_predictions(limit: int = 30, db: Session = Depends(get_db)):
     query = (
         db.query(Prediction)
@@ -188,7 +174,7 @@ def best_predictions(limit: int = 30, db: Session = Depends(get_db)):
         .join(Match, Event.match_id == Match.id)
         .filter(Match.kickoff_at >= func.now())
     )
-    rows = [p for p in query.all() if _match_allowed(p.event.match)]
+    rows = [p for p in query.all() if _visible_and_allowed(p)]
 
     by_match = defaultdict(list)
     for p in rows:
@@ -197,14 +183,11 @@ def best_predictions(limit: int = 30, db: Session = Depends(get_db)):
     selected = []
     for match_id, preds in by_match.items():
         best = max(preds, key=lambda p: p.probability)
-
         if float(best.probability) >= MAIN_THRESHOLD:
             selected.append(("normal", best, None))
             continue
-
         resultat_preds = [p for p in preds if p.event.type == "resultat"]
         best_resultat = max(resultat_preds, key=lambda p: p.probability) if resultat_preds else None
-
         if best_resultat and FALLBACK_MIN <= float(best_resultat.probability) < FALLBACK_MAX:
             dc = _build_double_chance(resultat_preds)
             if dc and float(dc["probability"]) >= MAIN_THRESHOLD:
@@ -251,8 +234,7 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
                 "cote_calculee": True,
                 "formule": double_chance.get("formule"),
                 "note": (
-                    "Cote calculée selon la méthode bookmaker (normalisation des "
-                    "probabilités implicites + marge de 5 %)."
+                    "Cote calculée selon la méthode bookmaker (normalisation + marge 5 %)."
                     if double_chance.get("formule") == "normalisee"
                     else "Cote estimée à partir des cotes disponibles."
                 ),
