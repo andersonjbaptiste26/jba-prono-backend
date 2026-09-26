@@ -8,9 +8,10 @@ from .database import engine
 from .routers import (
     matches, predictions, teams, admin,
     notes, auth, best_day, tickets, results, analytics,
+    suggested_tickets,
 )
 
-APP_VERSION = "0.5.1"
+APP_VERSION = "0.6.0"
 
 
 @asynccontextmanager
@@ -60,6 +61,7 @@ app.include_router(best_day.router)
 app.include_router(tickets.router)
 app.include_router(results.router)
 app.include_router(analytics.router)
+app.include_router(suggested_tickets.router)
 
 
 @app.get("/")
