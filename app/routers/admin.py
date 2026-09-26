@@ -8,8 +8,8 @@ from ..ingestion.sync import sync_all_leagues
 from ..ingestion.sync_stats import sync_all_team_stats
 from ..ingestion.results import sync_all_results
 from ..prediction.engine import generate_all_predictions
-# from ..prediction.settlement import settle_all_bets  # DÉPRÉCIÉ v0.3.0
 from ..models import InvitationCode
+from ..cache import cache_invalidate, cache_stats
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -49,35 +49,57 @@ def generate_codes(
 def list_codes(db: Session = Depends(get_db), _: None = Depends(_check_token)):
     rows = db.query(InvitationCode).order_by(InvitationCode.created_at.desc()).all()
     return [
-        {"code": c.code, "label": c.label, "used": c.user_id is not None, "created_at": c.created_at.isoformat()}
+        {"code": c.code, "label": c.label, "used": c.user_id is not None,
+         "created_at": c.created_at.isoformat()}
         for c in rows
     ]
 
 
 @router.post("/sync-odds")
 def sync_odds(db: Session = Depends(get_db), _: None = Depends(_check_token)):
-    return {"results": sync_all_leagues(db)}
+    result = sync_all_leagues(db)
+    cache_invalidate("predictions_")
+    cache_invalidate("matches_")
+    cache_invalidate("teams_")
+    return {"results": result}
 
 
 @router.post("/sync-stats")
 def sync_stats(db: Session = Depends(get_db), _: None = Depends(_check_token)):
-    return {"results": sync_all_team_stats(db)}
+    result = sync_all_team_stats(db)
+    cache_invalidate("predictions_")
+    cache_invalidate("teams_")
+    return {"results": result}
 
 
 @router.post("/generate-predictions")
 def generate_predictions(db: Session = Depends(get_db), _: None = Depends(_check_token)):
-    return generate_all_predictions(db)
+    result = generate_all_predictions(db)
+    cache_invalidate("predictions_")
+    cache_invalidate("tickets_")
+    return result
 
 
 @router.post("/sync-results")
 def sync_results(db: Session = Depends(get_db), _: None = Depends(_check_token)):
-    return {"results": sync_all_results(db)}
+    result = sync_all_results(db)
+    cache_invalidate("results_")
+    cache_invalidate("matches_")
+    return {"results": result}
 
 
-# @router.post("/settle-bets")
-# def settle_bets(db: Session = Depends(get_db), _: None = Depends(_check_token)):
-#     """
-#     DÉPRÉCIÉ v0.3.0 — Le règlement se fait désormais côté client.
-#     Conservé en commentaire pour référence.
-#     """
-#     return settle_all_bets(db)
+# ---------------------------------------------------------------------------
+# Cache admin
+# ---------------------------------------------------------------------------
+@router.post("/cache/clear")
+def cache_clear(
+    prefix: str = Query(None, description="Optionnel : ne vide que ce préfixe"),
+    _: None = Depends(_check_token),
+):
+    n = cache_invalidate(prefix)
+    return {"invalidated": n, "prefix": prefix}
+
+
+@router.get("/cache/stats")
+def cache_status(_: None = Depends(_check_token)):
+    return cache_stats()
