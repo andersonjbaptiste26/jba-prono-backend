@@ -199,6 +199,19 @@ class BestDay(Base):
     status = Column(String, default="Not Yet")
     pays = Column(String)
 
+# new for analyse dashboard ( 26-sept-2026 )
+class AnalyticsSession(Base):
+    __tablename__ = "analytics_sessions"
+    id = Column(Integer, primary_key=True)
+    session_id = Column(String, unique=True, nullable=False)
+    first_seen_date = Column(Date, nullable=False)
+    first_seen_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    last_seen_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    user_agent = Column(String, nullable=True)
+    __table_args__ = (
+        Index("ix_analytics_first_seen_date", "first_seen_date"),
+        Index("ix_analytics_last_seen", "last_seen_at"),
+    )
 
 # ============================================================================
 # DÉPRÉCIÉ depuis v0.3.0 — Paris gérés en localStorage côté client.
