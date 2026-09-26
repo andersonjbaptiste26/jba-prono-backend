@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import text
 
 from .database import engine
@@ -10,7 +11,7 @@ from .routers import (
 )
 # `bets` retiré : paris gérés en localStorage depuis v0.3.0
 
-APP_VERSION = "0.3.0"
+APP_VERSION = "0.3.1"
 
 
 @asynccontextmanager
@@ -40,6 +41,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ⚡ Compression GZip : réduit les réponses > 1 KB de 50-70 %
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 @app.middleware("http")
