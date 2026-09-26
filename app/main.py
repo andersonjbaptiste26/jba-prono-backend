@@ -7,11 +7,10 @@ from sqlalchemy import text
 from .database import engine
 from .routers import (
     matches, predictions, teams, admin,
-    notes, auth, best_day, tickets, results,
+    notes, auth, best_day, tickets, results, analytics,
 )
-# `bets` retiré : paris gérés en localStorage depuis v0.3.0
 
-APP_VERSION = "0.3.1"
+APP_VERSION = "0.4.0"
 
 
 @asynccontextmanager
@@ -42,7 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ⚡ Compression GZip : réduit les réponses > 1 KB de 50-70 %
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
@@ -62,7 +60,7 @@ app.include_router(auth.router)
 app.include_router(best_day.router)
 app.include_router(tickets.router)
 app.include_router(results.router)
-# app.include_router(bets.router)  # DÉPRÉCIÉ v0.3.0
+app.include_router(analytics.router)
 
 
 @app.get("/")
