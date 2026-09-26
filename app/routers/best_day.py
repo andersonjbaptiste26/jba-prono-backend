@@ -1,16 +1,13 @@
-"""
-Import d'une liste de matchs favoris depuis un fichier JSON.
-"""
 import os
 from datetime import date as date_type
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Header, Response
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import MatchesBestDay, BestDay
-from ..utils.cache import cache_memory, invalidate_cache
+from ..cache import cached
 
 router = APIRouter(tags=["best-day"])
 
@@ -46,12 +43,9 @@ class ImportPayload(BaseModel):
 @router.post("/admin/import-matches-json")
 def import_matches_json(
     payload: ImportPayload,
-    response: Response,
     db: Session = Depends(get_db),
     _: None = Depends(_check_token),
 ):
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
-
     teams_added, teams_skipped = 0, 0
     for t in payload.teams:
         exists = db.query(MatchesBestDay).filter(
@@ -65,7 +59,7 @@ def import_matches_json(
             championnat=t.championnat,
             classement_2025=t.classement_2025,
             equipe=t.equipe,
-            pays=t.pays
+            pays=t.pays,
         ))
         teams_added += 1
 
@@ -87,16 +81,14 @@ def import_matches_json(
             date=m.date,
             heure=m.heure,
             status="Not Yet",
-            pays=m.pays
+            pays=m.pays,
         ))
         matches_added += 1
 
     db.commit()
 
-    # 🔄 On invalide les caches après import
-    invalidate_cache("bestday_matches")
-    invalidate_cache("bestday_teams")
-    print("🔄 Caches Best Day invalidés après import")
+    from ..cache import cache_invalidate
+    cache_invalidate("best_day_")
 
     return {
         "teams_added": teams_added,
@@ -107,10 +99,8 @@ def import_matches_json(
 
 
 @router.get("/best-day/matches")
-@cache_memory(ttl_seconds=1800, key="bestday_matches")  # 🆕 10 min → 30 min
-def list_best_day_matches(response: Response, db: Session = Depends(get_db)):
-    response.headers["Cache-Control"] = "public, max-age=1800, s-maxage=1800, stale-while-revalidate=3600"
-
+@cached(ttl_seconds=1500, prefix="best_day_matches")  # 25 min
+def list_best_day_matches(db: Session = Depends(get_db)):
     today = date_type.today()
 
     db.query(BestDay).filter(
@@ -139,24 +129,24 @@ def list_best_day_matches(response: Response, db: Session = Depends(get_db)):
             "date": m.date.isoformat(),
             "heure": m.heure,
             "status": m.status,
-            "pays": m.pays
+            "pays": m.pays,
         })
     return result
 
 
 @router.get("/best-day/teams")
-@cache_memory(ttl_seconds=7200, key="bestday_teams")  # 🆕 30 min → 2 h
-def list_favorite_teams(response: Response, db: Session = Depends(get_db)):
-    response.headers["Cache-Control"] = "public, max-age=7200, s-maxage=7200, stale-while-revalidate=14400"
-
-    rows = db.query(MatchesBestDay).order_by(MatchesBestDay.championnat, MatchesBestDay.classement_2025).all()
+@cached(ttl_seconds=7200, prefix="best_day_teams")  # 2 h
+def list_favorite_teams(db: Session = Depends(get_db)):
+    rows = db.query(MatchesBestDay).order_by(
+        MatchesBestDay.championnat, MatchesBestDay.classement_2025
+    ).all()
     return [
         {
             "id": r.id,
             "championnat": r.championnat,
             "classement_2025": r.classement_2025,
             "equipe": r.equipe,
-            "pays": r.pays
+            "pays": r.pays,
         }
         for r in rows
     ]
