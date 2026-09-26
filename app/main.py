@@ -10,7 +10,7 @@ from .routers import (
     notes, auth, best_day, tickets, results, analytics,
 )
 
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.5.1"
 
 
 @asynccontextmanager
@@ -40,7 +40,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
