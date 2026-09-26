@@ -213,6 +213,46 @@ class AnalyticsSession(Base):
         Index("ix_analytics_last_seen", "last_seen_at"),
     )
 
+
+class SuggestedTicket(Base):
+    """
+    Ticket suggéré par l'admin, publié pour les utilisateurs.
+    Contient l'entité de paris + le lien/code pour aller jouer.
+    """
+    __tablename__ = "suggested_tickets"
+    id = Column(Integer, primary_key=True)
+    entity = Column(String, nullable=False)           # ParyajLakay / ParyajPam / BelTiFich
+    bet_link = Column(String, nullable=False)         # Lien ou code du bookmaker
+    total_odds = Column(Numeric(8, 3), nullable=False)
+    status = Column(String, default="active")         # "active" | "archived"
+    published_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    selections = relationship(
+        "SuggestedTicketSelection",
+        back_populates="ticket",
+        cascade="all, delete-orphan",
+    )
+
+
+class SuggestedTicketSelection(Base):
+    """
+    Sélection individuelle d'un ticket suggéré.
+    Instantané : on stocke le match, l'event, la cote au moment de la publication.
+    """
+    __tablename__ = "suggested_ticket_selections"
+    id = Column(Integer, primary_key=True)
+    ticket_id = Column(Integer, ForeignKey("suggested_tickets.id"), nullable=False)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
+    match_label = Column(String, nullable=False)      # "Arsenal vs Chelsea"
+    event_label = Column(String, nullable=False)      # "1X — Domicile ou Nul"
+    event_type = Column(String, nullable=True)        # "resultat" | "double_chance" | "buts"
+    odds_value = Column(Numeric(6, 2), nullable=False)
+    probability = Column(Numeric(5, 2), nullable=True)
+
+    ticket = relationship("SuggestedTicket", back_populates="selections")
+    __table_args__ = (
+        Index("ix_suggested_ticket_sel_ticket_id", "ticket_id"),
+    )
 # ============================================================================
 # DÉPRÉCIÉ depuis v0.3.0 — Paris gérés en localStorage côté client.
 # Les 3 classes ci-dessous sont conservées en commentaire pour référence.
