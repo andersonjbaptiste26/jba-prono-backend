@@ -1,29 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Match
-from ..utils.cache import cache_memory
+from ..cache import cached, match_still_visible
 
 router = APIRouter(prefix="/matches", tags=["matches"])
 
 
 @router.get("")
-@cache_memory(ttl_seconds=300, key="matches_list")  # 🆕 2 min → 5 min
-def list_matches(response: Response, db: Session = Depends(get_db)):
-    """GET /matches"""
-    response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300, stale-while-revalidate=600"
-
+@cached(ttl_seconds=1500, prefix="matches_list")
+def list_matches(db: Session = Depends(get_db)):
     matches = db.query(Match).order_by(Match.kickoff_at).all()
+    matches = [m for m in matches if match_still_visible(m)]
     return [_serialize(m) for m in matches]
 
 
 @router.get("/{match_id}")
-@cache_memory(ttl_seconds=300, key="matches_detail")  # 🆕 2 min → 5 min
-def get_match(match_id: int, response: Response, db: Session = Depends(get_db)):
-    """GET /matches/:id"""
-    response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300"
-
+@cached(ttl_seconds=1500, prefix="matches_detail")
+def get_match(match_id: int, db: Session = Depends(get_db)):
     match = db.query(Match).filter(Match.id == match_id).first()
     if not match:
         raise HTTPException(status_code=404, detail="Match introuvable")
@@ -42,7 +37,8 @@ def _serialize(m: Match, detailed: bool = False) -> dict:
     }
     if detailed:
         data["events"] = [
-            {"id": e.id, "type": e.type, "label": e.label, "odds": float(e.odds_value) if e.odds_value else None}
+            {"id": e.id, "type": e.type, "label": e.label,
+             "odds": float(e.odds_value) if e.odds_value else None}
             for e in m.events
         ]
     return data
