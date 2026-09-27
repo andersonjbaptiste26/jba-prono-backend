@@ -1,2 +1,23 @@
-https//www.jbaprono.com/
-https//www.jbaprono.com/app.html
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <url>
+    <loc>https://www.jbaprono.com/</loc>
+    <lastmod>2026-09-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.jbaprono.com/"/>
+    <xhtml:link rel="alternate" hreflang="ht" href="https://www.jbaprono.com/?lang=ht"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.jbaprono.com/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.jbaprono.com/?lang=es"/>
+  </url>
+
+  <url>
+    <loc>https://www.jbaprono.com/app.html</loc>
+    <lastmod>2026-09-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+</urlset>
