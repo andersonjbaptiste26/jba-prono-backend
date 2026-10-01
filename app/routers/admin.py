@@ -103,3 +103,55 @@ def cache_clear(
 @router.get("/cache/stats")
 def cache_status(_: None = Depends(_check_token)):
     return cache_stats()
+
+
+
+
+
+
+
+#≈=======
+#---- 1 Octobre 2026 ---
+#========
+@router.get("/test-unl")
+def test_unl():
+    """
+    Test : vérifie que les données UNL remontent bien
+    (football-data.org + Odds API).
+    """
+    from app.ingestion.football_data_client import fetch_matches, COMPETITIONS
+    from app.ingestion.odds_api_client import fetch_odds, SPORTS, extract_best_odds
+
+    # Test 1 : matchs UNL
+    matches_unl = fetch_matches(competition="UNL")
+    sample_matches = []
+    for m in matches_unl[:3]:
+        sample_matches.append({
+            "id": m.get("id"),
+            "home": m.get("homeTeam", {}).get("name"),
+            "away": m.get("awayTeam", {}).get("name"),
+            "date": m.get("utcDate"),
+            "status": m.get("status"),
+            "stage": m.get("stage"),
+        })
+
+    # Test 2 : cotes UNL
+    odds_unl = fetch_odds(sport="soccer_uefa_nations_league")
+    sample_odds = []
+    for o in odds_unl[:3]:
+        best = extract_best_odds(o)
+        sample_odds.append({
+            "match": f"{o.get('home_team')} vs {o.get('away_team')}",
+            "commence": o.get("commence_time"),
+            "best_odds": best,
+        })
+
+    return {
+        "status": "ok",
+        "competitions_disponibles": list(COMPETITIONS.keys()),
+        "sports_disponibles": list(SPORTS.keys()),
+        "unl_matches_count": len(matches_unl),
+        "unl_odds_count": len(odds_unl),
+        "sample_matches": sample_matches,
+        "sample_odds": sample_odds,
+    }
