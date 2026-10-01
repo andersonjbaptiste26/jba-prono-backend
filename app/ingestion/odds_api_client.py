@@ -15,9 +15,7 @@ LEAGUE_KEYS = {
     "soccer_portugal_primeira_liga": "Primeira Liga",
     "soccer_efl_champ": "EFL Championship",
     "soccer_brazil_campeonato": "Brasileirão",
-    #---Ajouter Le 01-Oct-2026---
-    "soccer_uefa_nations_league": "UEFA Nations League",  # ← AJOUT
-}
+    }
 
 
 class OddsApiError(Exception):
