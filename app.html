@@ -21,15 +21,18 @@
 <meta property="og:title" content="JBa Prono — Prédictions Football Statistiques">
 <meta property="og:description" content="Analyse statistique des matchs de football. Probabilités 1X/2X calculées par notre moteur.">
 <meta property="og:image" content="https://www.jbaprono.com/og-image.jpg">
+<meta property="og:image:secure_url" content="https://www.jbaprono.com/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="JBa Prono">
 <meta property="og:locale" content="fr_FR">
+<meta property="fb:app_id" content="976182801400825">
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="JBa Prono — Prédictions Football">
-<meta name="twitter:description" content="Statistiques fiables pour ne pas perdre.">
+<meta name="twitter:title" content="JBa Prono — Prédictions Football Statistiques">
+<meta name="twitter:description" content="Statistiques fiables pour ne pas perdre. Probabilités 1X/2X calculées par notre moteur.">
 <meta name="twitter:image" content="https://www.jbaprono.com/og-image.jpg">
 
 <!-- Favicons -->
@@ -384,6 +387,27 @@
   }
   .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* ============ BANNIÈRE WARM-UP ============ */
+  .warmup-banner{
+    display: none;
+    text-align: center;
+    padding: 14px 16px;
+    margin: 12px 0;
+    background: var(--accent-dim);
+    border: 1px solid rgba(5,150,105,0.2);
+    border-radius: 14px;
+    font-size: 12.5px;
+    color: var(--accent);
+    font-weight: 600;
+    line-height: 1.45;
+  }
+  .warmup-banner.visible{ display: block; }
+  .warmup-banner .sub{
+    font-weight: 500;
+    opacity: 0.8;
+    font-size: 11px;
+  }
+
   /* ============ PÉTALES DE CÉLÉBRATION ============ */
   .petals-overlay{
     position: fixed;
@@ -570,7 +594,6 @@
 </head>
 <body>
 
-
 <!-- OVERLAY AUTH -->
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-card">
@@ -591,6 +614,13 @@
 </header>
 
 <main>
+
+  <!-- BANNIÈRE WARM-UP (Réveil serveur Render) -->
+  <div class="warmup-banner" id="warmupBanner">
+    ⏳ Réveil du serveur en cours... Cela peut prendre 30 secondes la première fois.<br>
+    <span class="sub">Les prochains chargements seront instantanés.</span>
+  </div>
+
   <!-- ACCUEIL -->
   <section id="accueil" class="active">
     <div class="hero">
@@ -853,30 +883,56 @@ let suggestedTickets = [];
 // ============================================================
 // HELPERS
 // ============================================================
+// fetchJSON avec retry + warm-up banner (patch cold start Render)
 async function fetchJSON(url, options={}){
   const sep = url.includes('?') ? '&' : '?';
   const bustedUrl = `${url}${sep}_t=${Date.now()}`;
-  const controller = new AbortController();
-  const timeoutMs = options.timeoutMs || 60000;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutMs = options.timeoutMs || 25000;
+  const maxRetries = options.retries ?? 2;
+  const banner = document.getElementById('warmupBanner');
   const fetchOpts = { ...options };
   delete fetchOpts.timeoutMs;
-  try {
-    const res = await fetch(bustedUrl, {
-      ...fetchOpts,
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: { ...(options.headers||{}), 'Cache-Control': 'no-cache' }
-    });
-    if(!res.ok){
-      let detail = '';
-      try{ const j = await res.json(); detail = j.detail || JSON.stringify(j); }catch(e){}
-      const err = new Error(`${res.status} ${detail}`);
-      err.status = res.status;
-      throw err;
+  delete fetchOpts.retries;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(bustedUrl, {
+        ...fetchOpts,
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: { ...(options.headers||{}), 'Cache-Control': 'no-cache' }
+      });
+      clearTimeout(timer);
+      if (banner) banner.classList.remove('visible');
+      if(!res.ok){
+        let detail = '';
+        try{ const j = await res.json(); detail = j.detail || JSON.stringify(j); }catch(e){}
+        const err = new Error(`${res.status} ${detail}`);
+        err.status = res.status;
+        // 502/503/504 = souvent Render qui démarre → on retry
+        if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < maxRetries){
+          if (banner) banner.classList.add('visible');
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        throw err;
+      }
+      return res.json();
+    } catch(e){
+      clearTimeout(timer);
+      const isAbort = e.name === 'AbortError';
+      const isNet = String(e.message||'').includes('Failed to fetch');
+      if ((isAbort || isNet) && attempt < maxRetries){
+        if (banner) banner.classList.add('visible');
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+      if (banner) banner.classList.remove('visible');
+      throw e;
     }
-    return res.json();
-  } finally { clearTimeout(timer); }
+  }
 }
 
 function showApiError(msg){ const el=document.getElementById('apiNote'); el.textContent=msg; el.classList.add('error'); }
@@ -1105,25 +1161,20 @@ function closePetals(event){
 function goToWinningTicket(event){
   if (event) event.stopPropagation();
 
-  // 1. Fermer l'overlay pétales
   closePetals();
 
-  // 2. Nettoyer l'état des onglets
   document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-  // 3. Ouvrir la section des Tickets suggérés
   const section = document.getElementById('suggested');
   if (section){
     section.classList.add('visible', 'active');
   }
 
-  // 4. Masquer les boutons flottants
   if (typeof updateFloatingButtons === 'function'){
     updateFloatingButtons('suggested');
   }
 
-  // 5. Charger les tickets puis scroller
   if (typeof loadSuggestedTickets === 'function'){
     loadSuggestedTickets().then(() => {
       if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1188,7 +1239,7 @@ async function syncLocalBetsWithResults(){
 
   let results;
   try {
-    results = await fetchJSON(`${API_BASE}/results/recent?days=7`, { timeoutMs: 25000 });
+    results = await fetchJSON(`${API_BASE}/results/recent?days=7`, { timeoutMs: 20000, retries: 1 });
     hideHistNote();
   } catch(e) {
     console.warn('Sync résultats impossible :', e);
@@ -1227,7 +1278,6 @@ async function syncLocalBetsWithResults(){
     if (bet.selections.every(s => s.result !== null && s.result !== undefined)){
       const newStatus = bet.selections.every(s => s.result === "gagne") ? "gagne" : "perdu";
 
-      // Détection : le pari vient de passer à "gagne"
       if (newStatus === "gagne" && bet.status !== "gagne"){
         if (!bet._petalsShown){
           bet._petalsShown = true;
