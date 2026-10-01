@@ -9,9 +9,6 @@ COMPETITION_CODES = {
     "Serie A": "SA", "Ligue 1": "FL1", "Champions League": "CL",
     "Eredivisie": "DED", "Primeira Liga": "PPL",
     "EFL Championship": "ELC", "Brasileirão": "BSA",
-    #--Ajouter 01-Oct-2026 ---
-    "UEFA Nations League": "UNL",   # ← AJOUT
-    #-- ,
 }
 
 class FootballDataError(Exception):
