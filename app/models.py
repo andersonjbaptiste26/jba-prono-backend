@@ -1,20 +1,12 @@
 import uuid
-#--new 2 octobre 2026
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date,
-    ForeignKey, JSON, func, UniqueConstraint, Index 
-#-- new 2 Octobre 2026
-, Text, DateTime 
+    Column, Integer, String, Text, Numeric, Boolean, DateTime,
+    TIMESTAMP, Date, ForeignKey, JSON, func,
+    UniqueConstraint, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
-
-#--new 2 octobre 2026
-#from datetime import datetime 
-#from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
-
-
 
 Base = declarative_base()
 
