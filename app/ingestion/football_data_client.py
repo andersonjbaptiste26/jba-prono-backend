@@ -1,4 +1,4 @@
-  s3nimport os
+import os
 import requests
 
 BASE_URL = "https://api.football-data.org/v4"
