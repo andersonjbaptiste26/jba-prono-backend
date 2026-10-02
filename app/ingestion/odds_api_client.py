@@ -15,7 +15,7 @@ LEAGUE_KEYS = {
     "soccer_portugal_primeira_liga": "Primeira Liga",
     "soccer_efl_champ": "EFL Championship",
     "soccer_brazil_campeonato": "Brasileirão",
-    }
+}
 
 
 class OddsApiError(Exception):
@@ -23,7 +23,7 @@ class OddsApiError(Exception):
 
 
 def fetch_odds(sport_key: str, regions: str = "eu", markets: str = "h2h,totals") -> list[dict]:
-    """Note : 'btts' n'est pas un marché valide sur cet endpoint "en masse" —
+    """Note : 'btts' n'est pas un marché valide sur cet endpoint 'en masse' —
     seuls h2h, spreads et totals le sont."""
     if not API_KEY:
         raise OddsApiError("ODDS_API_KEY n'est pas configurée.")
