@@ -270,16 +270,47 @@
 
   /* ============ PUBLICITÉS ============ */
   .pub-inline{ margin: 16px 0 8px; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
-  .pub-inline a{ display: block; position: relative; aspect-ratio: 1536 / 284; overflow: hidden; }
-  .pub-inline img{ width: 100%; height: 100%; object-fit: cover; display: block; }
+ 
+  
   .pub-fixed{ position: fixed; bottom: 85px; left: 14px; right: 14px; max-width: 492px; margin: 0 auto; z-index: 19; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.10); display: none; }
   .pub-fixed.visible{ display: block; }
-  .pub-fixed a{ display: block; aspect-ratio: 1536 / 284; overflow: hidden; }
-  .pub-fixed img{ width: 100%; height: 100%; object-fit: cover; display: block; }
+ 
+   
   .pub-dot-nav{ position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 2; pointer-events: none; }
   .pub-dot-nav .dot{ width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.55); transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
   .pub-dot-nav .dot.active{ background: #FFFFFF; width: 16px; border-radius: 3px; }
+  /*=== new 2 octobre 2026 ==*/
+  /* PUB INLINE (Accueil) */
+.pub-inline a{
+  display: block;
+  position: relative;
+  aspect-ratio: 1536 / 284;
+  overflow: hidden;
+  background: #0F172A;
+}
+.pub-inline img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 
+/* PUB FIXE (Picks / Tickets) */
+.pub-fixed a{
+  display: block;
+  aspect-ratio: 1536 / 284;
+  overflow: hidden;
+  background: #0F172A;
+}
+.pub-fixed img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+  
+  
   /* ============ PÉTALES DE CÉLÉBRATION ============ */
   .petals-overlay{ position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,150,105,0.92) 0%, rgba(5,150,105,0.85) 100%); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; }
   .petals-overlay.visible{ display: flex; animation: petalsFadeIn 0.3s ease; }
