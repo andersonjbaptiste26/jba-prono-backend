@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>JBa Prono · Dashboard Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F9; --surface:#FFFFFF; --surface-2:#F8FAFC; --line:#E2E8F0;
+    --text:#0F172A; --muted:#64748B; --accent:#059669; --accent-dim:rgba(5,150,105,0.1);
+    --good:#059669; --bad:#DC2626;
+    --green-light:#6EE7B7; --yellow:#FCD34D;
+    --warn:#F59E0B; --warn-dim:rgba(245,158,11,0.1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom:100px; }
+  .disp{ font-family:'Space Grotesk',sans-serif; }
+  .num{ font-variant-numeric: tabular-nums; }
+
+  header.top{ padding:18px 20px 12px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:rgba(244,246,249,0.9); backdrop-filter:blur(12px); z-index:30; border-bottom:1px solid var(--line); }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+  .brand-name{ font-family:'Space Grotesk'; font-weight:700; font-size:17px; }
+  .brand-badge{ font-size:10px; color:var(--muted); font-weight:600; background:var(--surface); border:1px solid var(--line); padding:3px 8px; border-radius:100px; margin-left:6px; }
+  .top-right{ display:flex; align-items:center; gap:8px; }
+  .top-date{ font-size:11px; color:var(--muted); font-weight:500; }
+  .icon-btn{ background:var(--surface); color:var(--muted); border:1px solid var(--line); border-radius:100px; padding:6px 10px; font-size:11px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; display:flex; align-items:center; gap:5px; transition:transform 0.15s; }
+  .icon-btn:active{ transform:scale(0.95); }
+  .icon-btn svg{ width:12px; height:12px; }
+
+  main{ padding:0 20px; max-width:520px; margin:0 auto; }
+  section.tab{ display:none; }
+  section.tab.active{ display:block; animation:fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .page-title{ margin:16px 0 14px; }
+  .page-title .t{ font-family:'Space Grotesk'; font-weight:700; font-size:22px; }
+  .page-title .s{ font-size:11.5px; color:var(--muted); margin-top:3px; font-weight:500; }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.02); position:relative; overflow:hidden; }
+  .card .label{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; font-weight:700; display:flex; align-items:center; gap:5px; }
+  .card .value{ font-family:'Space Grotesk'; font-weight:700; font-size:32px; color:var(--text); margin-top:8px; line-height:1; letter-spacing:-0.5px; }
+  .card .value.accent{ color:var(--accent); }
+  .card .sub{ font-size:10.5px; color:var(--muted); margin-top:6px; font-weight:500; }
+  .badge-local{ display:inline-flex; align-items:center; gap:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:100px; padding:1px 6px; font-size:8.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:700; margin-left:auto; }
+  .live-dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:pulse 1.8s ease-in-out infinite; display:inline-block; }
+  @keyframes pulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:0.5; transform:scale(0.85); } }
+
+  .chart-card{ background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.02); margin-bottom:14px; }
+  .chart-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; }
+  .chart-title{ font-family:'Space Grotesk'; font-weight:700; font-size:15px; }
+  .chart-total{ font-family:'Space Grotesk'; font-weight:700; font-size:14px; color:var(--accent); }
+  .chart-total span{ font-size:10.5px; color:var(--muted); font-weight:600; }
+
+  .bars{ display:flex; align-items:flex-end; gap:4px; height:110px; padding-bottom:22px; position:relative; }
+  .bar{ flex:1; min-height:4px; background:linear-gradient(180deg, var(--accent) 0%, #34D399 100%); border-radius:4px 4px 2px 2px; position:relative; min-width:6px; }
+  .bar .bar-count{ position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--muted); font-weight:700; font-family:'Space Grotesk'; white-space:nowrap; opacity:0; transition:opacity 0.15s; }
+  .bar:hover .bar-count{ opacity:1; }
+  .bar .bar-day{ position:absolute; bottom:-20px; left:50%; transform:translateX(-50%); font-size:8.5px; color:var(--muted); font-weight:600; white-space:nowrap; }
+  .bar.empty{ background:var(--surface-2); border:1px dashed var(--line); }
+  .bar.today{ background:linear-gradient(180deg, var(--accent) 0%, var(--green-light) 100%); box-shadow:0 0 12px rgba(5,150,105,0.35); }
+
+  .section-head{ display:flex; justify-content:space-between; align-items:baseline; margin:14px 0 10px; }
+  .section-head .st{ font-family:'Space Grotesk'; font-weight:700; font-size:16px; }
+  .section-head .ss{ font-size:11px; color:var(--muted); font-weight:600; }
+
+  .pick-row{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; transition:all 0.15s; }
+  .pick-row:hover{ border-color:var(--accent); }
+  .pick-row .info{ flex:1; min-width:0; }
+  .pick-row .teams{ font-family:'Space Grotesk'; font-weight:600; font-size:13.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pick-row .meta{ font-size:10px; color:var(--muted); margin-top:2px; font-weight:500; }
+  .pick-row .kickoff-line{ display:flex; align-items:center; gap:4px; font-size:10.5px; color:var(--accent); font-weight:700; margin-top:5px; font-family:'Space Grotesk'; }
+  .pick-row .kickoff-line svg{ width:11px; height:11px; }
+  .pick-row .event{ font-size:11px; color:var(--muted); margin-top:6px; font-weight:500; }
+  .pick-row .right{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .pick-row .pct{ font-family:'Space Grotesk'; font-weight:700; font-size:14px; color:var(--accent); }
+  .pick-row .odds{ font-size:10.5px; color:var(--muted); margin-top:2px; font-weight:500; text-align:right; }
+  .add-btn{ width:30px; height:30px; border-radius:50%; background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent); font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold; flex-shrink:0; }
+  .add-btn.added{ background:var(--accent); color:#FFF; }
+
+  .panier-list{ margin-bottom:14px; }
+  .panier-item{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+  .panier-item .info{ flex:1; min-width:0; }
+  .panier-item .teams{ font-family:'Space Grotesk'; font-weight:600; font-size:13.5px; }
+  .panier-item .event{ font-size:10.5px; color:var(--muted); margin-top:3px; font-weight:500; }
+  .panier-item .odds{ font-family:'Space Grotesk'; font-weight:700; font-size:13px; color:var(--accent); margin-right:6px; }
+  .remove-x{ color:var(--muted); font-size:16px; cursor:pointer; padding:2px 6px; font-weight:bold; }
+
+  .admin-form{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 4px 12px rgba(0,0,0,0.02); }
+  .admin-form label{ display:block; font-size:10.5px; color:var(--muted); font-weight:700; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.05em; }
+  .admin-form select, .admin-form input{ width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-family:'Inter'; font-size:13px; color:var(--text); outline:none; margin-bottom:12px; }
+  .admin-form select:focus, .admin-form input:focus{ border-color:var(--accent); }
+
+  .total-line{ display:flex; justify-content:space-between; font-size:13px; padding:8px 0; font-weight:500; }
+  .total-line .lbl{ color:var(--text); }
+  .total-line .val{ font-family:'Space Grotesk'; font-weight:700; font-size:18px; color:var(--accent); }
+  .publish-btn
