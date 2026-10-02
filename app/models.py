@@ -259,7 +259,7 @@ class SuggestedTicketSelection(Base):
 
 
 
-#-- new 2 octobre 2026 
+# 2 octobre 2026
 class Ad(Base):
     """Publicité affichée dans l'app."""
     __tablename__ = "ads"
