@@ -8,10 +8,10 @@ from .database import engine
 from .routers import (
     matches, predictions, teams, admin,
     notes, auth, best_day, tickets, results, analytics,
-    suggested_tickets,
+    suggested_tickets, ads,
 )
 
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.7.0"
 
 
 @asynccontextmanager
@@ -62,6 +62,7 @@ app.include_router(tickets.router)
 app.include_router(results.router)
 app.include_router(analytics.router)
 app.include_router(suggested_tickets.router)
+app.include_router(ads.router)
 
 
 @app.get("/")
@@ -78,3 +79,10 @@ def health():
     except Exception as e:
         db_status = f"error: {e}"
     return {"status": "healthy", "version": APP_VERSION, "db": db_status}
+
+
+@app.get("/ping")
+def ping():
+    """Warm-up ultra-léger, sans accès DB."""
+    from datetime import datetime as _dt
+    return {"pong": True, "ts": _dt.utcnow().isoformat()}
