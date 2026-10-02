@@ -11,6 +11,7 @@ COMPETITION_CODES = {
     "EFL Championship": "ELC", "Brasileirão": "BSA",
 }
 
+
 class FootballDataError(Exception):
     pass
 
