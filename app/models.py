@@ -1,10 +1,20 @@
 import uuid
+#--new 2 octobre 2026
+from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Numeric, Boolean, TIMESTAMP, Date,
-    ForeignKey, JSON, func, UniqueConstraint, Index
+    ForeignKey, JSON, func, UniqueConstraint, Index 
+#-- new 2 Octobre 2026
+, Text, DateTime 
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
+
+#--new 2 octobre 2026
+#from datetime import datetime 
+#from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
+
+
 
 Base = declarative_base()
 
@@ -253,6 +263,24 @@ class SuggestedTicketSelection(Base):
     __table_args__ = (
         Index("ix_suggested_ticket_sel_ticket_id", "ticket_id"),
     )
+
+
+
+
+#-- new 2 octobre 2026 
+class Ad(Base):
+    """Publicité affichée dans l'app."""
+    __tablename__ = "ads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    advertiser_name = Column(String(120), nullable=True)
+    image_url = Column(Text, nullable=False)
+    target_url = Column(Text, nullable=False)
+    duration_days = Column(Integer, nullable=False)
+    display_order = Column(Integer, default=0, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
 # ============================================================================
 # DÉPRÉCIÉ depuis v0.3.0 — Paris gérés en localStorage côté client.
 # Les 3 classes ci-dessous sont conservées en commentaire pour référence.
