@@ -97,4 +97,1440 @@
   .total-line{ display:flex; justify-content:space-between; font-size:13px; padding:8px 0; font-weight:500; }
   .total-line .lbl{ color:var(--text); }
   .total-line .val{ font-family:'Space Grotesk'; font-weight:700; font-size:18px; color:var(--accent); }
-  .publish-btn
+  .publish-btn{ width:100%; margin-top:8px; background:var(--accent); color:#FFF; border:none; border-radius:100px; padding:14px; font-weight:600; font-size:14px; cursor:pointer; box-shadow:0 4px 12px rgba(5,150,105,0.2); transition:transform 0.15s; }
+  .publish-btn:active{ transform:scale(0.98); }
+  .publish-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .empty-state{ text-align:center; color:var(--muted); font-size:12.5px; padding:40px 20px; font-weight:500; background:var(--surface); border:1px dashed var(--line); border-radius:16px; }
+
+  .ticket-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.02); position:relative; }
+  .ticket-card .head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .ticket-card .entity{ font-family:'Space Grotesk'; font-weight:700; font-size:13px; color:var(--accent); display:flex; align-items:center; gap:6px; }
+  .ticket-card .status-badge{ font-size:9px; font-weight:700; padding:3px 9px; border-radius:100px; text-transform:uppercase; }
+  .st-active{ background:var(--accent-dim); color:var(--accent); }
+  .st-archived{ background:var(--surface-2); color:var(--muted); border:1px solid var(--line); }
+  .ticket-card .sel-line{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); padding:5px 0; border-top:1px dashed var(--line); margin-top:6px; padding-top:6px; font-weight:500; }
+  .ticket-card .sel-line:first-of-type{ border-top:none; margin-top:8px; padding-top:0; }
+  .ticket-card .foot{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); }
+  .ticket-card .total{ font-family:'Space Grotesk'; font-weight:700; font-size:14px; color:var(--accent); }
+  .ticket-card .total-line{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px dashed var(--line); margin-top:10px; }
+  .ticket-card .total-line .lbl{ font-size:12px; color:var(--text); font-weight:600; }
+  .ticket-card .total-line .total{ font-family:'Space Grotesk'; font-weight:700; font-size:16px; color:var(--accent); }
+  .entity-block{ background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:8px; }
+  .entity-block .entity-name{ font-family:'Space Grotesk'; font-weight:700; font-size:12px; color:var(--text); margin-bottom:6px; }
+  .entity-block .entity-link, .entity-block .entity-code{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; word-break:break-all; text-decoration:none; }
+  .entity-block .entity-link{ color:var(--accent); transition:opacity 0.15s; }
+  .entity-block .entity-link:hover{ opacity:0.75; }
+  .entity-block .entity-link svg{ width:13px; height:13px; flex-shrink:0; }
+  .entity-block .entity-code{ color:var(--muted); }
+  .entity-block .entity-code svg{ width:13px; height:13px; flex-shrink:0; }
+  .archive-btn{ background:var(--surface-2); color:var(--bad); border:1px solid var(--line); border-radius:100px; padding:6px 12px; font-size:10.5px; font-weight:600; cursor:pointer; font-family:'Inter'; }
+  .archive-btn:hover{ background:#FEE2E2; border-color:#FCA5A5; }
+
+  .admin-section{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.02); }
+  .admin-section .as-title{ font-family:'Space Grotesk'; font-weight:700; font-size:14px; color:var(--text); display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .admin-section .as-title .ico{ font-size:16px; }
+  .admin-section .as-desc{ font-size:11px; color:var(--muted); margin-bottom:14px; line-height:1.5; font-weight:500; }
+  .action-btn{ width:100%; background:var(--accent); color:#FFF; border:none; border-radius:100px; padding:13px 16px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; box-shadow:0 4px 12px rgba(5,150,105,0.2); transition:transform 0.15s, opacity 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:8px; }
+  .action-btn:active{ transform:scale(0.98); }
+  .action-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .action-btn.secondary{ background:var(--surface-2); color:var(--text); border:1px solid var(--line); box-shadow:none; }
+  .action-btn.danger{ background:var(--bad); box-shadow:0 4px 12px rgba(220,38,38,0.2); }
+  .action-btn.warn{ background:var(--warn); box-shadow:0 4px 12px rgba(245,158,11,0.2); }
+  .action-btn .spin{ display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:#FFF; border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .result-box{ background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-family:'Space Grotesk'; font-size:11px; color:var(--text); margin-top:10px; display:none; line-height:1.6; word-break:break-word; max-height:200px; overflow-y:auto; white-space:pre-wrap; }
+  .result-box.visible{ display:block; }
+  .result-box.success{ background:var(--accent-dim); border-color:rgba(5,150,105,0.3); color:var(--accent); }
+  .result-box.error{ background:rgba(220,38,38,0.06); border-color:rgba(220,38,38,0.18); color:var(--bad); }
+
+  .codes-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .code-pill{ background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:'Space Grotesk'; font-weight:700; font-size:12px; text-align:center; cursor:pointer; color:var(--text); transition:all 0.15s; user-select:all; }
+  .code-pill:hover{ background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+  .code-pill:active{ transform:scale(0.96); }
+
+  .stat-inline{ display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .stat-inline:last-child{ border-bottom:none; }
+  .stat-inline .k{ color:var(--muted); font-weight:500; }
+  .stat-inline .v{ font-family:'Space Grotesk'; font-weight:700; color:var(--text); }
+
+  /* PUBLICITÉS */
+  .ad-preview-wrap{ margin:-4px 0 12px; }
+  .ad-preview-label{ font-size:10px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+  .ad-preview-box{ aspect-ratio:1536/284; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .ad-preview-box img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ad-hint{ font-size:10.5px; color:var(--muted); margin:-8px 0 12px; font-weight:500; line-height:1.5; }
+  .ad-item-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:12px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.02); }
+  .ad-item-top{ display:flex; gap:10px; align-items:flex-start; }
+  .ad-thumb{ width:110px; flex-shrink:0; aspect-ratio:1536/284; border-radius:8px; overflow:hidden; background:var(--surface-2); border:1px solid var(--line); }
+  .ad-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ad-meta{ flex:1; min-width:0; }
+  .ad-meta-line{ font-size:10px; color:var(--muted); margin-top:4px; font-weight:500; word-break:break-all; }
+  .ad-actions{ display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); flex-wrap:wrap; }
+
+  .login-overlay{ position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(6px); z-index:100; display:none; align-items:center; justify-content:center; padding:20px; }
+  .login-overlay.visible{ display:flex; }
+  .login-card{ background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:26px; width:100%; max-width:380px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.05); }
+  .login-title{ font-family:'Space Grotesk'; font-weight:700; font-size:20px; margin-bottom:8px; }
+  .login-sub{ font-size:12px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+  .login-input{ width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:12px; font-family:'Space Grotesk'; font-size:14px; text-align:center; letter-spacing:0.05em; outline:none; margin-bottom:14px; }
+  .login-input:focus{ border-color:var(--accent); }
+  .login-btn{ width:100%; background:var(--accent); color:#FFF; border:none; border-radius:100px; padding:13px; font-weight:600; font-size:14px; cursor:pointer; box-shadow:0 4px 12px rgba(5,150,105,0.2); }
+  .login-error{ color:var(--bad); font-size:11.5px; margin-top:10px; display:none; }
+
+  nav.bottom{ position:fixed; bottom:14px; left:14px; right:14px; z-index:20; background:rgba(255,255,255,0.9); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:28px; display:flex; padding:6px; max-width:492px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.06); }
+  .nav-btn{ flex:1; background:none; border:none; color:var(--muted); font-family:'Inter'; font-size:9.5px; font-weight:600; padding:9px 2px 8px; border-radius:22px; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .nav-btn .ic{ width:19px; height:19px; }
+  .nav-btn.active{ background:var(--accent); color:#FFF; }
+  .nav-badge{ position:absolute; top:2px; right:12px; background:var(--accent); color:#FFF; font-size:8.5px; font-weight:700; border-radius:100px; padding:0 4px; min-width:14px; text-align:center; }
+  .nav-btn.active .nav-badge{ background:#FFF; color:var(--accent); }
+
+  .status{ font-size:10.5px; color:var(--muted); text-align:center; padding:8px; font-weight:500; }
+  .status.error{ color:var(--bad); }
+
+  .toast{ position:fixed; left:50%; bottom:110px; transform:translateX(-50%) translateY(20px); background:var(--accent); color:#FFF; padding:12px 22px; border-radius:100px; font-size:13px; font-weight:600; box-shadow:0 8px 24px rgba(5,150,105,0.35); z-index:95; opacity:0; pointer-events:none; transition:opacity 0.25s ease, transform 0.25s ease; white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.error{ background:var(--bad); box-shadow:0 8px 24px rgba(220,38,38,0.35); }
+
+  footer{ text-align:center; color:var(--muted); font-size:10.5px; padding:16px 0 6px; font-weight:500; }
+  footer a{ color:var(--accent); text-decoration:none; font-weight:600; }
+         </style>
+         </head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-title disp">Accès administrateur</div>
+    <div class="login-sub">Entre ton token admin pour déverrouiller le dashboard et gérer les tickets suggérés.</div>
+    <input type="password" id="tokenInput" class="login-input" placeholder="Token admin" autocomplete="off">
+    <button class="login-btn" onclick="submitToken()">Déverrouiller</button>
+    <div class="login-error" id="loginError">Token invalide.</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="top">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div class="brand-name">JBa Prono</div>
+    <div class="brand-badge">Dashboard</div>
+  </div>
+  <div class="top-right">
+    <div class="top-date" id="topDate"></div>
+    <button class="icon-btn" onclick="refreshCurrentTab()" title="Actualiser">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-3-6.7"/>
+        <polyline points="21 3 21 9 15 9"/>
+      </svg>
+    </button>
+    <button class="icon-btn" onclick="logout()" title="Se déconnecter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ ONGLET STATS ============ -->
+  <section id="tab-stats" class="tab active">
+    <div class="page-title">
+      <div class="t disp">Tableau de bord</div>
+      <div class="s">Suivi de l'activité en temps réel</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Visites du jour <span class="badge-local">local</span></div>
+        <div class="value num accent" id="todayVisits">—</div>
+        <div class="sub" id="todayVisitsSub">—</div>
+      </div>
+      <div class="card">
+        <div class="label">Actifs maintenant <span class="badge-local">local</span></div>
+        <div class="value num" id="activeNow" style="display:flex; align-items:center; gap:10px;">
+          <span class="live-dot" id="activeDot"></span>
+          <span id="activeCount">—</span>
+        </div>
+        <div class="sub" id="activeSub">—</div>
+      </div>
+      <div class="card">
+        <div class="label">Total utilisateurs</div>
+        <div class="value num accent" id="totalUsers">—</div>
+        <div class="sub">depuis le lancement</div>
+      </div>
+      <div class="card">
+        <div class="label">Nouveaux aujourd'hui</div>
+        <div class="value num" id="newToday">—</div>
+        <div class="sub">depuis la base</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title disp">Historique · 15 jours</div>
+        <div class="chart-total"><span id="periodTotal">—</span> <span>total</span></div>
+      </div>
+      <div class="bars" id="barsContainer">
+        <div class="empty-state" style="width:100%;">Chargement…</div>
+      </div>
+    </div>
+
+    <div class="status" id="statusStats"></div>
+  </section>
+
+  <!-- ============ ONGLET PICKS ============ -->
+  <section id="tab-picks" class="tab">
+    <div class="page-title">
+      <div class="t disp">Picks disponibles</div>
+      <div class="s">Sélectionne des matchs pour construire un ticket</div>
+    </div>
+
+    <div class="section-head">
+      <div class="st disp">Best Picks</div>
+      <div class="ss" id="picksCount">—</div>
+    </div>
+
+    <div id="picksList">
+      <div class="empty-state">Chargement…</div>
+    </div>
+  </section>
+
+  <!-- ============ ONGLET PANIER ADMIN ============ -->
+  <section id="tab-panier" class="tab">
+    <div class="page-title">
+      <div class="t disp">Panier admin</div>
+      <div class="s">Compose le ticket suggéré puis publie-le</div>
+    </div>
+
+    <div class="section-head">
+      <div class="st disp">Sélections</div>
+      <div class="ss" id="panierCount">0</div>
+    </div>
+
+    <div class="panier-list" id="panierList">
+      <div class="empty-state">Aucune sélection.<br>Ajoute des matchs depuis l'onglet Picks.</div>
+    </div>
+
+    <div class="admin-form" id="adminForm" style="display:none;">
+      <label for="entitySelect">Entité <span style="color:var(--bad)">*</span></label>
+      <select id="entitySelect">
+        <option value="">— Choisir —</option>
+        <option value="ParyajLakay">ParyajLakay</option>
+        <option value="ParyajPam">ParyajPam</option>
+        <option value="BelTiFich">BelTiFich</option>
+      </select>
+
+      <label for="betLinkInput">Bet Lien / Code <span style="color:var(--bad)">*</span></label>
+      <input type="text" id="betLinkInput" placeholder="Ex. https://paryajlakay.com/bet/ABC123" maxlength="500">
+
+      <div class="total-line">
+        <span class="lbl">Cote totale</span>
+        <span class="val num" id="totalOdds">—</span>
+      </div>
+
+      <button class="publish-btn" id="publishBtn" onclick="publishTicket()">
+        Publier le ticket
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ ONGLET TICKETS PUBLIÉS ============ -->
+  <section id="tab-tickets" class="tab">
+    <div class="page-title">
+      <div class="t disp">Tickets publiés</div>
+      <div class="s">Visibles par les utilisateurs</div>
+    </div>
+
+    <div class="section-head">
+      <div class="st disp">Liste</div>
+      <div class="ss" id="ticketsCount">—</div>
+    </div>
+
+    <div id="ticketsPublishedList">
+      <div class="empty-state">Chargement…</div>
+    </div>
+  </section>
+
+  <!-- ============ ONGLET ADMIN ============ -->
+  <section id="tab-admin" class="tab">
+    <div class="page-title">
+      <div class="t disp">Administration</div>
+      <div class="s">Outils système et synchronisation</div>
+    </div>
+
+    <!-- SYNC ODDS -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">📊</span> Synchronisation des cotes</div>
+      <div class="as-desc">Récupère les matchs et cotes à venir depuis The Odds API.</div>
+      <button class="action-btn" id="btnSyncOdds" onclick="adminSyncOdds()">
+        <span class="label">Sync cotes</span>
+      </button>
+      <div class="result-box" id="resultSyncOdds"></div>
+    </div>
+
+    <!-- SYNC STATS -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">📈</span> Synchronisation des stats</div>
+      <div class="as-desc">Récupère les classements et calcule les Team Ratings.</div>
+      <button class="action-btn" id="btnSyncStats" onclick="adminSyncStats()">
+        <span class="label">Sync stats</span>
+      </button>
+      <div class="result-box" id="resultSyncStats"></div>
+    </div>
+
+    <!-- GENERATE PREDICTIONS -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">🎯</span> Génération des prédictions</div>
+      <div class="as-desc">Calcule les probabilités pour tous les matchs à venir.</div>
+      <button class="action-btn" id="btnGenPreds" onclick="adminGeneratePredictions()">
+        <span class="label">Générer prédictions</span>
+      </button>
+      <div class="result-box" id="resultGenPreds"></div>
+    </div>
+
+    <!-- SYNC RESULTS -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">⚽</span> Synchronisation des résultats</div>
+      <div class="as-desc">Récupère les scores finaux des matchs joués.</div>
+      <button class="action-btn" id="btnSyncResults" onclick="adminSyncResults()">
+        <span class="label">Sync résultats</span>
+      </button>
+      <div class="result-box" id="resultSyncResults"></div>
+    </div>
+
+    <!-- CODES D'INVITATION -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">🔑</span> Codes d'invitation</div>
+      <div class="as-desc">Génère de nouveaux codes pour les utilisateurs.</div>
+
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <input type="number" id="codeCount" min="1" max="50" value="5" placeholder="Nombre" style="flex:1; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-family:'Inter'; font-size:13px; outline:none; color:var(--text);">
+        <button class="action-btn" style="flex:2; margin-bottom:0;" onclick="adminGenerateCodes()">
+          Générer
+        </button>
+      </div>
+
+      <div class="codes-grid" id="codesOutput"></div>
+      <div class="result-box" id="resultCodes"></div>
+    </div>
+
+    <!-- CACHE -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">💾</span> Cache</div>
+      <div class="as-desc">Vérifie ou vide le cache mémoire du backend.</div>
+      <button class="action-btn secondary" onclick="adminCacheStats()">
+        <span class="label">Voir l'état du cache</span>
+      </button>
+      <button class="action-btn warn" onclick="adminCacheClear()">
+        <span class="label">🗑️ Vider le cache</span>
+      </button>
+      <div class="result-box" id="resultCache"></div>
+    </div>
+
+    <!-- PUBLICITÉS -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">📢</span> Publicités</div>
+      <div class="as-desc">Ajoute, renouvelle ou supprime les pubs affichées dans l'app.</div>
+
+      <label for="adName">Nom annonceur <span style="color:var(--muted); font-weight:500;">(optionnel)</span></label>
+      <input type="text" id="adName" placeholder="Ex. Boutique X" maxlength="120" style="width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-family:'Inter'; font-size:13px; color:var(--text); outline:none; margin-bottom:12px;">
+
+      <label for="adImageUrl" style="display:block; font-size:10.5px; color:var(--muted); font-weight:700; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.05em;">Lien image <span style="color:var(--bad)">*</span></label>
+      <input type="url" id="adImageUrl" placeholder="Colle un lien Google Drive ou URL directe" style="width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-family:'Inter'; font-size:13px; color:var(--text); outline:none; margin-bottom:6px;">
+      <div class="ad-hint">Format 1536 × 284 px · Lien Drive supporté automatiquement</div>
+
+      <div class="ad-preview-wrap" id="adPreviewWrap" style="display:none;">
+        <div class="ad-preview-label">Aperçu</div>
+        <div class="ad-preview-box">
+          <img id="adPreviewImg" src="" alt="">
+        </div>
+      </div>
+
+      <label for="adTargetUrl" style="display:block; font-size:10.5px; color:var(--muted); font-weight:700; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.05em;">Lien de contact <span style="color:var(--bad)">*</span></label>
+      <input type="url" id="adTargetUrl" placeholder="https://wa.me/509xxxx ou https://site.com" style="width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-family:'Inter'; font-size:13px; color:var(--text); outline:none; margin-bottom:12px;">
+
+      <label for="adDuration" style="display:block; font-size:10.5px; color:var(--muted); font-weight:700; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.05em;">Durée d'affichage <span style="color:var(--bad)">*</span></label>
+      <select id="adDuration" style="width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-family:'Inter'; font-size:13px; color:var(--text); outline:none; margin-bottom:12px;">
+        <option value="7">7 jours</option>
+        <option value="30" selected>30 jours (1 mois)</option>
+        <option value="90">90 jours (3 mois)</option>
+        <option value="180">180 jours (6 mois)</option>
+      </select>
+
+      <button class="action-btn" id="btnCreateAd" onclick="adminCreateAd()">
+        <span class="label">➕ Créer la pub</span>
+      </button>
+      <div class="result-box" id="resultCreateAd"></div>
+    </div>
+
+    <!-- LISTE DES PUBS -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">📋</span> Pubs en cours</div>
+      <div class="section-head" style="margin:0 0 10px;">
+        <div class="st disp" style="font-size:12px; color:var(--muted);">Toutes les pubs</div>
+        <div class="ss" id="adsCount">—</div>
+      </div>
+      <div id="adsList"></div>
+    </div>
+
+    <!-- SYSTÈME -->
+    <div class="admin-section">
+      <div class="as-title"><span class="ico">🏥</span> Système</div>
+      <div class="as-desc">Vérifie l'état de santé du backend et de la base de données.</div>
+      <button class="action-btn secondary" onclick="adminHealth()">
+        <span class="label">Health check</span>
+      </button>
+      <div class="result-box" id="resultHealth"></div>
+    </div>
+
+  </section>
+
+  <footer>
+    JBa Prono · <a href="index.html">Retour à l'app</a>
+  </footer>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom">
+  <button class="nav-btn active" data-tab="stats" onclick="showTab('stats', this)">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="12" width="4" height="9"/>
+      <rect x="10" y="6" width="4" height="15"/>
+      <rect x="17" y="9" width="4" height="12"/>
+    </svg>
+    Stats
+  </button>
+  <button class="nav-btn" data-tab="picks" onclick="showTab('picks', this)">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2 15 8.5 22 9.5 17 14.2 18.2 21 12 17.6 5.8 21 7 14.2 2 9.5 9 8.5Z"/>
+    </svg>
+    Picks
+  </button>
+  <button class="nav-btn" data-tab="panier" onclick="showTab('panier', this)">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="20" r="1.4"/>
+      <circle cx="17" cy="20" r="1.4"/>
+      <path d="M2 3h2l2.6 12.4a1.6 1.6 0 0 0 1.6 1.3h8.1a1.6 1.6 0 0 0 1.6-1.3L20 7H6"/>
+    </svg>
+    Panier
+    <span class="nav-badge" id="panierNavBadge" style="display:none;">0</span>
+  </button>
+  <button class="nav-btn" data-tab="tickets" onclick="showTab('tickets', this)">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z"/>
+      <path d="M9 9h7M9 13h7"/>
+    </svg>
+    Tickets
+  </button>
+  <button class="nav-btn" data-tab="admin" onclick="showTab('admin', this)">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    Admin
+  </button>
+  </nav>
+  <script>
+// ============================================================
+// CONFIG
+// ============================================================
+const DEFAULT_API_BASE = 'https://jba-prono-backend.onrender.com';
+const API_BASE = window.JBA_API_BASE
+  || localStorage.getItem('jba_api_base')
+  || DEFAULT_API_BASE;
+
+let adminToken = localStorage.getItem('jba_admin_token') || '';
+let panier = [];
+let predictions = [];
+let predictionsById = new Map();
+let publishedTickets = [];
+
+// ============================================================
+// HELPERS
+// ============================================================
+function escapeHtml(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const ENTITY_FULL_NAMES = {
+  'ParyajLakay': 'Paryaj Lakay',
+  'ParyajPam':   'Paryaj Pam',
+  'BelTiFich':   'Bel Ti Fich',
+};
+
+function entityFullName(code){ return ENTITY_FULL_NAMES[code] || code; }
+
+function formatKickoff(iso){
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'})
+    + ' · '
+    + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function safeHref(url){
+  if (!url) return '#';
+  const s = String(url).trim();
+  if (s.startsWith('http://') || s.startsWith('https://')) return s;
+  return '#';
+}
+
+function isLink(url){
+  if (!url) return false;
+  const s = String(url).trim();
+  return s.startsWith('http://') || s.startsWith('https://');
+}
+
+async function fetchJSON(url, options={}){
+  const sep = url.includes('?') ? '&' : '?';
+  const bustedUrl = `${url}${sep}_t=${Date.now()}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs || 60000);
+  const headers = { ...(options.headers || {}), 'Cache-Control': 'no-cache' };
+  try {
+    const res = await fetch(bustedUrl, {
+      ...options,
+      cache: 'no-store',
+      signal: controller.signal,
+      headers,
+    });
+    if(!res.ok){
+      let detail = '';
+      try { const j = await res.json(); detail = j.detail || JSON.stringify(j); } catch(e){}
+      const err = new Error(`${res.status} ${detail}`);
+      err.status = res.status;
+      throw err;
+    }
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function authHeaders(){
+  return {
+    'Content-Type': 'application/json',
+    'x-admin-token': adminToken,
+  };
+}
+
+let _toastTimer = null;
+function showToast(msg, duration = 2500, isError = false){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function setStatus(id, msg, isError = false){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('error', isError);
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function showLogin(){
+  document.getElementById('loginOverlay').classList.add('visible');
+}
+
+function hideLogin(){
+  document.getElementById('loginOverlay').classList.remove('visible');
+}
+
+async function submitToken(){
+  const input = document.getElementById('tokenInput');
+  const errEl = document.getElementById('loginError');
+  const token = input.value.trim();
+  if (!token) return;
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/codes?_t=${Date.now()}`, {
+      headers: { 'x-admin-token': token },
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('invalid');
+    adminToken = token;
+    localStorage.setItem('jba_admin_token', token);
+    hideLogin();
+    initDashboard();
+  } catch(e) {
+    errEl.style.display = 'block';
+  }
+}
+
+function logout(){
+  if (!confirm('Se déconnecter du dashboard ?')) return;
+  adminToken = '';
+  localStorage.removeItem('jba_admin_token');
+  location.reload();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showTab(tabId, btn){
+  document.querySelectorAll('section.tab').forEach(s => s.classList.remove('active'));
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+
+  if (tabId === 'stats') loadStatsTab();
+  if (tabId === 'picks') loadPicksTab();
+  if (tabId === 'panier') renderPanier();
+  if (tabId === 'tickets') loadPublishedTickets();
+  if (tabId === 'admin') adminLoadAds();
+}
+
+function refreshCurrentTab(){
+  const active = document.querySelector('.nav-btn.active');
+  const tab = active ? active.dataset.tab : 'stats';
+  if (tab === 'stats') loadStatsTab();
+  if (tab === 'picks') loadPicksTab();
+  if (tab === 'panier') renderPanier();
+  if (tab === 'tickets') loadPublishedTickets();
+  if (tab === 'admin') adminLoadAds();
+}
+
+// ============================================================
+// ONGLET STATS
+// ============================================================
+const VISITS_LOG_KEY = 'jba_dashboard_visits_log';
+function getTodayKey(){ return new Date().toISOString().slice(0, 10); }
+
+function recordLocalVisit(){
+  let log = [];
+  try {
+    const raw = localStorage.getItem(VISITS_LOG_KEY);
+    log = raw ? JSON.parse(raw) : [];
+  } catch(e){ log = []; }
+
+  const now = Date.now();
+  const ONE_HOUR = 60 * 60 * 1000;
+  const last = log.length ? log[log.length - 1] : 0;
+  if (now - last > ONE_HOUR) log.push(now);
+
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  log = log.filter(t => now - t < THIRTY_DAYS);
+
+  localStorage.setItem(VISITS_LOG_KEY, JSON.stringify(log));
+  return log;
+}
+
+function countTodayVisits(){
+  const log = recordLocalVisit();
+  const today = getTodayKey();
+  return log.filter(t => new Date(t).toISOString().slice(0, 10) === today).length;
+}
+
+function getDashboardSessionId(){
+  let sid = localStorage.getItem('jba_dashboard_session_id');
+  if (!sid){
+    sid = 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('jba_dashboard_session_id', sid);
+  }
+  return sid;
+}
+
+let _lastHeartbeat = Date.now();
+function startLocalHeartbeat(){
+  setInterval(() => { _lastHeartbeat = Date.now(); }, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _lastHeartbeat = Date.now();
+  });
+}
+function isSelfActive(){ return (Date.now() - _lastHeartbeat) < 120000; }
+
+function renderLocalStats(){
+  const todayCount = countTodayVisits();
+  document.getElementById('todayVisits').textContent = todayCount;
+  document.getElementById('todayVisitsSub').textContent =
+    todayCount === 1 ? '1 visite depuis cet appareil' : `${todayCount} visites depuis cet appareil`;
+
+  const active = isSelfActive() ? 1 : 0;
+  document.getElementById('activeCount').textContent = active;
+  document.getElementById('activeSub').textContent = active
+    ? 'Vous êtes connecté(e)'
+    : 'Aucune activité récente';
+
+  const dot = document.getElementById('activeDot');
+  dot.style.background = active ? 'var(--accent)' : 'var(--muted)';
+  dot.style.boxShadow = active ? '0 0 8px var(--accent)' : 'none';
+  dot.style.animation = active ? 'pulse 1.8s ease-in-out infinite' : 'none';
+}
+
+function renderRemoteStats(data){
+  if (!data) return;
+  document.getElementById('totalUsers').textContent = data.total_users || 0;
+  document.getElementById('newToday').textContent = data.total_today || 0;
+
+  const daily = data.daily || [];
+  document.getElementById('periodTotal').textContent = data.period_total || 0;
+
+  const container = document.getElementById('barsContainer');
+  if (!daily.length){
+    container.innerHTML = '<div class="empty-state" style="width:100%;">Aucune donnée pour le moment.</div>';
+    return;
+  }
+
+  const max = Math.max(...daily.map(d => d.count), 1);
+  const todayKey = getTodayKey();
+
+  container.innerHTML = daily.map(d => {
+    const pct = (d.count / max) * 100;
+    const height = Math.max(pct, 4);
+    const isToday = d.date === todayKey;
+    const dayNum = new Date(d.date + 'T00:00:00').getDate();
+    return `
+      <div class="bar ${d.count === 0 ? 'empty' : ''} ${isToday ? 'today' : ''}"
+           style="height:${height}%;" title="${d.date} : ${d.count}">
+        <div class="bar-count">${d.count}</div>
+        <div class="bar-day">${dayNum}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadStatsTab(){
+  renderLocalStats();
+  setStatus('statusStats', 'Chargement des statistiques…');
+  try {
+    const data = await fetchJSON(`${API_BASE}/analytics/stats?days=15`);
+    renderRemoteStats(data);
+    setStatus('statusStats', '');
+  } catch(e) {
+    setStatus('statusStats', 'Impossible de charger les statistiques distantes.', true);
+  }
+}
+
+// ============================================================
+// ONGLET PICKS
+// ============================================================
+async function loadPicksTab(){
+  const list = document.getElementById('picksList');
+  list.innerHTML = '<div class="empty-state">Chargement…</div>';
+  try {
+    predictions = await fetchJSON(`${API_BASE}/predictions/best?limit=30`);
+    predictionsById = new Map(predictions.filter(p => p.event_id != null).map(p => [p.event_id, p]));
+    renderPicksList();
+  } catch(e) {
+    console.error(e);
+    list.innerHTML = '<div class="empty-state">Erreur lors du chargement des picks.</div>';
+  }
+}
+
+function renderPicksList(){
+  const list = document.getElementById('picksList');
+  document.getElementById('picksCount').textContent = `${predictions.length} pick(s)`;
+
+  if (!predictions.length){
+    list.innerHTML = '<div class="empty-state">Aucun pick disponible.</div>';
+    return;
+  }
+
+  list.innerHTML = predictions.map(p => {
+    const inPanier = panier.some(x => x.event_id === p.event_id);
+    const pct = Math.round(p.probability);
+    const kickoff = formatKickoff(p.kickoff_at);
+    return `
+      <div class="pick-row">
+        <div class="info">
+          <div class="teams">${escapeHtml(p.match || '')}</div>
+          <div class="meta">${escapeHtml(p.competition || '')}</div>
+          <div class="kickoff-line">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 7v5l3 3"/>
+            </svg>
+            <span>${escapeHtml(kickoff)}</span>
+          </div>
+          <div class="event">${escapeHtml(p.event || '')}</div>
+        </div>
+        <div class="right">
+          <div style="text-align:right;">
+            <div class="pct num">${pct}%</div>
+            <div class="odds">cote ${p.odds ? Number(p.odds).toFixed(2) : '—'}</div>
+          </div>
+          <div class="add-btn ${inPanier ? 'added' : ''}" onclick="addToPanier(${p.event_id})">
+            ${inPanier ? '✓' : '+'}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// PANIER
+// ============================================================
+function addToPanier(eventId){
+  if (panier.some(x => x.event_id === eventId)) return;
+  const pred = predictionsById.get(eventId);
+  if (!pred) return;
+
+  panier.push({
+    event_id: pred.event_id,
+    match: pred.match,
+    event: pred.event,
+    event_type: pred.event_type,
+    odds: pred.odds,
+    probability: pred.probability,
+  });
+
+  renderPicksList();
+  updatePanierNavBadge();
+  showToast('Ajouté au panier');
+}
+
+function removeFromPanier(idx){
+  panier.splice(idx, 1);
+  renderPanier();
+  updatePanierNavBadge();
+}
+
+function updatePanierNavBadge(){
+  const badge = document.getElementById('panierNavBadge');
+  if (panier.length > 0){
+    badge.style.display = 'inline-block';
+    badge.textContent = panier.length;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderPanier(){
+  const list = document.getElementById('panierList');
+  const form = document.getElementById('adminForm');
+  const count = document.getElementById('panierCount');
+
+  count.textContent = `${panier.length} sélection(s)`;
+
+  if (panier.length === 0){
+    list.innerHTML = '<div class="empty-state">Aucune sélection.<br>Ajoute des matchs depuis l\'onglet Picks.</div>';
+    form.style.display = 'none';
+    return;
+  }
+
+  list.innerHTML = panier.map((p, i) => `
+    <div class="panier-item">
+      <div class="info">
+        <div class="teams">${escapeHtml(p.match)}</div>
+        <div class="event">${escapeHtml(p.event)} · cote ${Number(p.odds).toFixed(2)}</div>
+      </div>
+      <div style="display:flex; align-items:center;">
+        <div class="odds">${Number(p.odds).toFixed(2)}</div>
+        <div class="remove-x" onclick="removeFromPanier(${i})">✕</div>
+      </div>
+    </div>
+  `).join('');
+
+  form.style.display = 'block';
+
+  const totalOdds = panier.reduce((acc, p) => acc * (Number(p.odds) || 1), 1);
+  document.getElementById('totalOdds').textContent = totalOdds.toFixed(2);
+}
+
+// ============================================================
+// PUBLIER UN TICKET
+// ============================================================
+async function publishTicket(){
+  const btn = document.getElementById('publishBtn');
+
+  if (panier.length === 0){
+    showToast('Le panier est vide.', 2500, true);
+    return;
+  }
+
+  const entity = document.getElementById('entitySelect').value;
+  const betLink = document.getElementById('betLinkInput').value.trim();
+
+  if (!entity){
+    showToast('Choisis une entité.', 2500, true);
+    document.getElementById('entitySelect').focus();
+    return;
+  }
+  if (!betLink){
+    showToast('Le Bet Lien / Code est obligatoire.', 2500, true);
+    document.getElementById('betLinkInput').focus();
+    return;
+  }
+
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = 'Publication…';
+
+  const payload = {
+    entity: entity,
+    bet_link: betLink,
+    selections: panier.map(p => ({
+      event_id: p.event_id,
+      match_label: p.match,
+      event_label: p.event,
+      event_type: p.event_type,
+      odds_value: p.odds,
+      probability: p.probability,
+    })),
+  };
+
+  try {
+    await fetchJSON(`${API_BASE}/admin/suggested-tickets`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    panier = [];
+    document.getElementById('entitySelect').value = '';
+    document.getElementById('betLinkInput').value = '';
+    updatePanierNavBadge();
+    renderPanier();
+    renderPicksList();
+
+    showToast('✅ Ticket publié avec succès');
+    setTimeout(() => showTab('tickets', document.querySelector('.nav-btn[data-tab="tickets"]')), 800);
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur : ' + (e.message || 'Publication impossible'), 3500, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+// ============================================================
+// TICKETS PUBLIÉS
+// ============================================================
+async function loadPublishedTickets(){
+  const list = document.getElementById('ticketsPublishedList');
+  list.innerHTML = '<div class="empty-state">Chargement…</div>';
+  try {
+    publishedTickets = await fetchJSON(`${API_BASE}/admin/suggested-tickets`, {
+      headers: authHeaders(),
+    });
+    renderPublishedTickets();
+  } catch(e) {
+    console.error(e);
+    list.innerHTML = '<div class="empty-state">Erreur lors du chargement.</div>';
+  }
+}
+
+function renderPublishedTickets(){
+  const list = document.getElementById('ticketsPublishedList');
+  document.getElementById('ticketsCount').textContent = `${publishedTickets.length} ticket(s)`;
+
+  if (!publishedTickets.length){
+    list.innerHTML = '<div class="empty-state">Aucun ticket publié pour le moment.</div>';
+    return;
+  }
+
+  list.innerHTML = publishedTickets.map(t => {
+    const d = t.published_at ? new Date(t.published_at) : null;
+    const dateStr = d ? d.toLocaleDateString('fr-FR') : '—';
+    const isArchived = t.status === 'archived';
+    const statusClass = isArchived ? 'st-archived' : 'st-active';
+    const statusText = isArchived ? 'Archivé' : 'Actif';
+
+    const fullName = entityFullName(t.entity);
+    const linkIsReal = isLink(t.bet_link);
+    const href = safeHref(t.bet_link);
+
+    const selsHtml = (t.selections || []).map(s => `
+      <div class="sel-line">
+        <span>${escapeHtml(s.match)} — ${escapeHtml(s.event)}</span>
+        <span class="num">${Number(s.odds).toFixed(2)}</span>
+      </div>
+    `).join('');
+
+    const linkBlock = linkIsReal
+      ? `<div class="entity-block">
+           <div class="entity-name">${escapeHtml(fullName)}</div>
+           <a class="entity-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+               <polyline points="15 3 21 3 21 9"/>
+               <line x1="10" y1="14" x2="21" y2="3"/>
+             </svg>
+             <span>${escapeHtml(t.bet_link)}</span>
+           </a>
+         </div>`
+      : `<div class="entity-block">
+           <div class="entity-name">${escapeHtml(fullName)}</div>
+           <div class="entity-code">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <rect x="3" y="7" width="18" height="13" rx="2"/>
+               <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+             </svg>
+             <span>${escapeHtml(t.bet_link)}</span>
+           </div>
+         </div>`;
+
+    return `
+      <div class="ticket-card">
+        <div class="head">
+          <div class="entity">🎟️ JBa Prono - Ticket (s)</div>
+          <div class="status-badge ${statusClass}">${statusText}</div>
+        </div>
+        ${selsHtml}
+        <div class="total-line">
+          <span class="lbl">Cote totale</span>
+          <span class="total">${Number(t.total_odds).toFixed(2)}</span>
+        </div>
+        ${linkBlock}
+        <div class="foot">
+          <div style="font-size:10px;color:var(--muted);">Publié le ${dateStr}</div>
+          ${!isArchived ? `<button class="archive-btn" onclick="archiveTicket(${t.id})">Archiver</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function archiveTicket(ticketId){
+  if (!confirm('Archiver ce ticket ? Il ne sera plus visible par les utilisateurs.')) return;
+  try {
+    await fetchJSON(`${API_BASE}/admin/suggested-tickets/${ticketId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    showToast('Ticket archivé');
+    loadPublishedTickets();
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur : archivage impossible', 3000, true);
+  }
+}
+
+// ============================================================
+// ONGLET ADMIN
+// ============================================================
+function showResultBox(id, content, type='success'){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+  el.classList.remove('success', 'error');
+  el.classList.add('visible', type);
+}
+
+async function callAdminAction(buttonId, resultId, url, successMsg, transformFn){
+  const btn = document.getElementById(buttonId);
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> En cours…';
+
+  try {
+    const data = await fetchJSON(url, {
+      method: 'POST',
+      headers: authHeaders(),
+      timeoutMs: 120000,
+    });
+    const display = transformFn ? transformFn(data) : data;
+    showResultBox(resultId, display, 'success');
+    showToast(successMsg);
+    return data;
+  } catch(e) {
+    console.error(e);
+    showResultBox(resultId, 'Erreur : ' + (e.message || 'Échec'), 'error');
+    showToast('Échec : ' + (e.message || 'Erreur'), 3000, true);
+    return null;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+async function adminSyncOdds(){
+  await callAdminAction(
+    'btnSyncOdds', 'resultSyncOdds',
+    `${API_BASE}/admin/sync-odds`,
+    '✅ Cotes synchronisées',
+    (data) => {
+      if (data.results && Array.isArray(data.results)){
+        const lines = data.results.map(r => {
+          if (r.error) return `❌ ${r.league} : ${r.error}`;
+          return `✅ ${r.league} : +${r.matches_created || 0} créés, ${r.matches_updated || 0} mis à jour`;
+        });
+        const total = data.results.reduce((a,r) => a + (r.total_fetched || 0), 0);
+        return lines.join('\n') + `\n\n📊 Total : ${total} matchs récupérés`;
+      }
+      return data;
+    }
+  );
+}
+
+async function adminSyncStats(){
+  await callAdminAction(
+    'btnSyncStats', 'resultSyncStats',
+    `${API_BASE}/admin/sync-stats`,
+    '✅ Stats synchronisées',
+    (data) => {
+      if (data.results && Array.isArray(data.results)){
+        return data.results.map(r => r.error
+          ? `❌ ${r.league} : ${r.error}`
+          : `✅ ${r.league} : ${r.teams_processed || 0} équipes traitées`
+        ).join('\n');
+      }
+      return data;
+    }
+  );
+}
+
+async function adminGeneratePredictions(){
+  await callAdminAction(
+    'btnGenPreds', 'resultGenPreds',
+    `${API_BASE}/admin/generate-predictions`,
+    '✅ Prédictions générées',
+    (data) => `📊 Matchs traités : ${data.matches_processed || 0}\n⏭️ Ignorés : ${data.matches_skipped || 0}\n📈 Total : ${data.total_matches || 0}`
+  );
+}
+
+async function adminSyncResults(){
+  await callAdminAction(
+    'btnSyncResults', 'resultSyncResults',
+    `${API_BASE}/admin/sync-results`,
+    '✅ Résultats synchronisés',
+    (data) => {
+      if (data.results && Array.isArray(data.results)){
+        return data.results.map(r => r.error
+          ? `❌ ${r.league} : ${r.error}`
+          : `✅ ${r.league} : ${r.matches_updated || 0} matchs mis à jour`
+        ).join('\n');
+      }
+      return data;
+    }
+  );
+}
+
+async function adminGenerateCodes(){
+  const count = parseInt(document.getElementById('codeCount').value) || 5;
+  const btn = event.target;
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Génération…';
+
+  try {
+    const data = await fetchJSON(`${API_BASE}/admin/generate-codes?count=${count}`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+
+    const codes = data.codes || [];
+    document.getElementById('codesOutput').innerHTML = codes.map(c => `
+      <div class="code-pill" onclick="copyCode(this, '${escapeHtml(c)}')">${escapeHtml(c)}</div>
+    `).join('');
+
+    document.getElementById('resultCodes').classList.remove('visible');
+    showToast(`✅ ${codes.length} code(s) généré(s)`);
+  } catch(e) {
+    console.error(e);
+    showResultBox('resultCodes', 'Erreur : ' + (e.message || 'Échec'), 'error');
+    showToast('Échec', 3000, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function copyCode(el, code){
+  navigator.clipboard.writeText(code).then(() => {
+    const original = el.textContent;
+    el.textContent = '✓ Copié';
+    setTimeout(() => { el.textContent = original; }, 800);
+  });
+}
+
+async function adminCacheStats(){
+  try {
+    const data = await fetchJSON(`${API_BASE}/admin/cache/stats`, {
+      headers: authHeaders(),
+    });
+    showResultBox('resultCache',
+      `📦 Entrées totales : ${data.total_entries || 0}\n` +
+      `✅ Actives : ${data.alive_entries || 0}\n` +
+      `⏱️ Expirées : ${data.expired_entries || 0}`,
+      'success'
+    );
+  } catch(e) {
+    console.error(e);
+    showResultBox('resultCache', 'Erreur : ' + (e.message || 'Échec'), 'error');
+  }
+}
+
+async function adminCacheClear(){
+  if (!confirm('Vider le cache ? Les prochaines requêtes seront plus lentes.')) return;
+  try {
+    const data = await fetchJSON(`${API_BASE}/admin/cache/clear`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    showResultBox('resultCache', `🗑️ ${data.invalidated || 0} entrée(s) supprimée(s)`, 'success');
+    showToast('✅ Cache vidé');
+  } catch(e) {
+    console.error(e);
+    showResultBox('resultCache', 'Erreur : ' + (e.message || 'Échec'), 'error');
+    showToast('Échec', 3000, true);
+  }
+}
+
+async function adminHealth(){
+  try {
+    const data = await fetchJSON(`${API_BASE}/health`);
+    const lines = [
+      `🏥 Statut : ${data.status || 'inconnu'}`,
+      `📌 Version : ${data.version || '—'}`,
+      `💾 Base de données : ${data.db === 'ok' ? '✅ OK' : '❌ ' + (data.db || 'erreur')}`,
+    ];
+    showResultBox('resultHealth', lines.join('\n'), data.status === 'healthy' ? 'success' : 'error');
+  } catch(e) {
+    console.error(e);
+    showResultBox('resultHealth', 'Erreur : ' + (e.message || 'Échec'), 'error');
+  }
+}
+
+// ============================================================
+// PUBLICITÉS
+// ============================================================
+function convertDriveUrl(url){
+  if (!url) return url;
+  const s = url.trim();
+  let m = s.match(/\/file\/d\/([^\/\?#]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  m = s.match(/[?&]id=([^&#]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  return s;
+}
+
+function updateAdPreview(){
+  const input = document.getElementById('adImageUrl');
+  const wrap  = document.getElementById('adPreviewWrap');
+  const img   = document.getElementById('adPreviewImg');
+  if (!input || !wrap || !img) return;
+  const raw = (input.value || '').trim();
+  if (!raw){
+    wrap.style.display = 'none';
+    return;
+  }
+  img.src = convertDriveUrl(raw);
+  wrap.style.display = 'block';
+}
+
+async function adminLoadAds(){
+  const list = document.getElementById('adsList');
+  const countEl = document.getElementById('adsCount');
+  if (!list) return;
+  list.innerHTML = '<div class="empty-state">Chargement…</div>';
+  try {
+    const rows = await fetchJSON(`${API_BASE}/admin/ads`, { headers: authHeaders() });
+    if (countEl) countEl.textContent = `${rows.length} pub(s)`;
+    if (!rows.length){
+      list.innerHTML = '<div class="empty-state">Aucune pub pour le moment.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(a => {
+      const img = convertDriveUrl(a.image_url);
+      let statusClass = 'st-active';
+      let statusText = 'Active';
+      if (a.is_expired){ statusClass = 'st-archived'; statusText = 'Expirée'; }
+      else if (!a.is_active){ statusClass = 'st-archived'; statusText = 'Désactivée'; }
+      else if (a.days_left <= 3){ statusClass = 'st-archived'; statusText = `Expire dans ${a.days_left}j`; }
+      else { statusText = `Active · ${a.days_left}j`; }
+
+      const createdStr = new Date(a.created_at).toLocaleDateString('fr-FR');
+      const expireStr  = new Date(a.expires_at).toLocaleDateString('fr-FR');
+      const safeName   = a.advertiser_name ? escapeHtml(a.advertiser_name) : 'Sans nom';
+
+      return `
+        <div class="ad-item-card">
+          <div class="ad-item-top">
+            <div class="ad-thumb">
+              <img src="${escapeHtml(img)}" alt="" onerror="this.style.display='none'">
+            </div>
+            <div class="ad-meta">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                <div style="font-family:'Space Grotesk'; font-weight:700; font-size:12.5px; color:var(--accent);">${safeName}</div>
+                <div class="status-badge ${statusClass}">${statusText}</div>
+              </div>
+              <div class="ad-meta-line">Créé ${createdStr} · Expire ${expireStr}</div>
+              <div class="ad-meta-line">${escapeHtml(a.target_url)}</div>
+            </div>
+          </div>
+          <div class="ad-actions">
+            <button class="archive-btn" style="color:var(--accent);" onclick="adminRenewAd(${a.id})">Renouveler</button>
+            <button class="archive-btn" onclick="adminToggleAd(${a.id}, ${a.is_active ? 'true' : 'false'})">${a.is_active ? 'Désactiver' : 'Activer'}</button>
+            <button class="archive-btn" onclick="adminDeleteAd(${a.id})">Supprimer</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch(e){
+    console.error(e);
+    list.innerHTML = '<div class="empty-state">Erreur de chargement.</div>';
+  }
+}
+
+async function adminCreateAd(){
+  const btn = document.getElementById('btnCreateAd');
+  const name    = document.getElementById('adName').value.trim();
+  const imgRaw  = document.getElementById('adImageUrl').value.trim();
+  const target  = document.getElementById('adTargetUrl').value.trim();
+  const duration = parseInt(document.getElementById('adDuration').value, 10);
+
+  if (!imgRaw){ showToast('Lien image requis.', 2500, true); return; }
+  if (!target){ showToast('Lien de contact requis.', 2500, true); return; }
+  if (![7,30,90,180].includes(duration)){ showToast('Durée invalide.', 2500, true); return; }
+
+  btn.disabled = true;
+  const old = btn.innerHTML;
+  btn.innerHTML = '<span class="spin"></span> Création…';
+
+  try {
+    await fetchJSON(`${API_BASE}/admin/ads`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        advertiser_name: name || null,
+        image_url: imgRaw,
+        target_url: target,
+        duration_days: duration,
+      }),
+    });
+    showResultBox('resultCreateAd', '✅ Pub créée.', 'success');
+    showToast('✅ Pub créée');
+    document.getElementById('adName').value = '';
+    document.getElementById('adImageUrl').value = '';
+    document.getElementById('adTargetUrl').value = '';
+    document.getElementById('adDuration').value = '30';
+    document.getElementById('adPreviewWrap').style.display = 'none';
+    adminLoadAds();
+  } catch(e){
+    showResultBox('resultCreateAd', 'Erreur : ' + (e.message || 'échec'), 'error');
+    showToast('Échec création', 3000, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = old;
+  }
+}
+
+async function adminRenewAd(adId){
+  const choice = prompt(
+    'Renouveler pour combien de jours ?\n' +
+    'Tape : 7, 30, 90 ou 180',
+    '30'
+  );
+  if (!choice) return;
+  const d = parseInt(choice, 10);
+  if (![7,30,90,180].includes(d)){ showToast('Durée invalide.', 2500, true); return; }
+
+  try {
+    await fetchJSON(`${API_BASE}/admin/ads/${adId}/renew`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ duration_days: d }),
+    });
+    showToast(`✅ Renouvelée +${d}j`);
+    adminLoadAds();
+  } catch(e){
+    showToast('Échec renouvellement', 3000, true);
+  }
+}
+
+async function adminToggleAd(adId, isActive){
+  try {
+    await fetchJSON(`${API_BASE}/admin/ads/${adId}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ is_active: !isActive }),
+    });
+    showToast(isActive ? 'Pub désactivée' : 'Pub activée');
+    adminLoadAds();
+  } catch(e){
+    showToast('Échec', 3000, true);
+  }
+}
+
+async function adminDeleteAd(adId){
+  if (!confirm('Supprimer définitivement cette pub ?')) return;
+  try {
+    await fetchJSON(`${API_BASE}/admin/ads/${adId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    showToast('🗑️ Pub supprimée');
+    adminLoadAds();
+  } catch(e){
+    showToast('Échec suppression', 3000, true);
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('topDate').textContent =
+  new Date().toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'});
+
+startLocalHeartbeat();
+
+async function initDashboard(){
+  try {
+    await fetch(`${API_BASE}/analytics/ping`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ session_id: getDashboardSessionId() }),
+    });
+  } catch(e){}
+
+  loadStatsTab();
+  setInterval(renderLocalStats, 30000);
+}
+
+// Point d'entrée
+if (adminToken){
+  (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/codes?_t=${Date.now()}`, {
+        headers: { 'x-admin-token': adminToken },
+        cache: 'no-store'
+      });
+      if (res.ok){
+        hideLogin();
+        initDashboard();
+      } else {
+        adminToken = '';
+        localStorage.removeItem('jba_admin_token');
+        showLogin();
+      }
+    } catch(e){
+      showLogin();
+    }
+  })();
+} else {
+  showLogin();
+}
+
+// Entrée clavier pour valider le token
+document.getElementById('tokenInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitToken();
+});
+
+// Preview live de l'image pub
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('adImageUrl');
+  if (inp) inp.addEventListener('input', updateAdPreview);
+});
+</script>
+</body>
+  </html>
