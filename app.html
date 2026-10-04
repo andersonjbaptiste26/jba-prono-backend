@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-<!-- SEO principal -->
 <title>JBa Prono — Prédictions Football & Analyses Statistiques</title>
 <meta name="description" content="JBa Prono analyse les matchs de football et calcule les probabilités 1X/2X en temps réel. Statistiques fiables pour ne pas perdre.">
 <meta name="keywords" content="pronostic football, prédiction match, cote 1X 2X, statistiques football, paris sportifs, JBa Prono">
@@ -12,10 +11,8 @@
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#059669">
 
-<!-- Canonical -->
 <link rel="canonical" href="https://www.jbaprono.com/app.html">
 
-<!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.jbaprono.com/app.html">
 <meta property="og:title" content="JBa Prono — Prédictions Football Statistiques">
@@ -29,21 +26,17 @@
 <meta property="og:locale" content="fr_FR">
 <meta property="fb:app_id" content="976182801400825">
 
-<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="JBa Prono — Prédictions Football Statistiques">
 <meta name="twitter:description" content="Statistiques fiables pour ne pas perdre. Probabilités 1X/2X calculées par notre moteur.">
 <meta name="twitter:image" content="https://www.jbaprono.com/og-image.jpg">
 
-<!-- Favicons -->
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
 <link rel="apple-touch-icon" href="/favicon-192.png">
 
-<!-- Manifest PWA -->
 <link rel="manifest" href="/manifest.json">
 
-<!-- Structured Data -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -77,17 +70,150 @@
   .brand{ display:flex; align-items:center; gap:10px; }
   .brand-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
   .brand-name{ font-family:'Space Grotesk'; font-weight:700; font-size:17px; color:var(--text); }
-  .top-right{ display:flex; align-items:center; gap:12px; }
+  .top-right{ display:flex; align-items:center; gap:12px; position:relative; }
   .top-date{ font-size:11px; color:var(--muted); font-weight:500; }
-  .logout-btn{ background:var(--surface); border:1px solid var(--line); color:var(--muted); font-size:10px; padding:4px 8px; border-radius:8px; cursor:pointer; font-weight:600; }
 
-  .auth-overlay{ position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(6px); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
-  .auth-card{ background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:24px; width:100%; max-width:380px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.05); }
-  .auth-title{ font-family:'Space Grotesk'; font-weight:700; font-size:20px; margin-bottom:8px; color:var(--text); }
-  .auth-sub{ font-size:12px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
-  .auth-input{ width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:12px; color:var(--text); font-family:'Space Grotesk'; font-size:16px; text-align:center; text-transform:uppercase; letter-spacing:0.1em; outline:none; margin-bottom:14px; }
-  .auth-btn{ width:100%; background:var(--accent); color:#FFFFFF; border:none; border-radius:100px; padding:13px; font-weight:600; font-size:14px; cursor:pointer; box-shadow:0 4px 12px rgba(5,150,105,0.2); }
-  .auth-error{ color:var(--bad); font-size:11.5px; margin-top:10px; display:none; }
+  /* ============ MENU 3 POINTS (texte, vert, taille Compte) ============ */
+  .menu-btn{
+    background:transparent;
+    border:none;
+    color:var(--accent);
+    font-family:'Space Grotesk', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:0.08em;
+    padding:4px 8px;
+    border-radius:8px;
+    cursor:pointer;
+    transition: all 0.15s;
+    user-select:none;
+  }
+  .menu-btn:hover{ background:var(--accent-dim); color:#047857; }
+  .menu-btn:active{ transform:scale(0.95); }
+
+  .menu-dropdown{
+    position: absolute;
+    top: 42px; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.10);
+    padding: 6px;
+    min-width: 180px;
+    display: none;
+    z-index: 50;
+    animation: menuFadeIn 0.15s ease;
+  }
+  .menu-dropdown.visible{ display: block; }
+  @keyframes menuFadeIn{
+    from{ opacity: 0; transform: translateY(-6px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+  .menu-item{
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    transition: background 0.12s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .menu-item:hover{ background: var(--accent-dim); color: var(--accent); }
+  .menu-item .mi-ico{ font-size: 16px; }
+
+  /* ============ MODALES ============ */
+  .modal-overlay{
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.55);
+    backdrop-filter: blur(6px);
+    z-index: 150;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.visible{ display: flex; }
+  @keyframes fadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
+
+  .modal-card{
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  @keyframes modalIn{
+    from{ opacity: 0; transform: scale(0.92) translateY(10px); }
+    to{ opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-head{
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .modal-title{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal-close{
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .modal-close:hover{ background: #FEE2E2; border-color: #FCA5A5; color: var(--bad); }
+  .modal-body{
+    font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .modal-body p{ margin-bottom: 12px; }
+  .modal-body ul{ margin: 12px 0; padding-left: 0; list-style: none; }
+  .modal-body li{
+    padding: 8px 0 8px 24px;
+    position: relative;
+    font-size: 13px;
+    color: var(--text);
+    border-bottom: 1px dashed var(--line);
+  }
+  .modal-body li:last-child{ border-bottom: none; }
+  .modal-body li::before{
+    content: "•";
+    position: absolute;
+    left: 8px;
+    color: var(--accent);
+    font-weight: bold;
+    font-size: 16px;
+  }
+  .modal-body a{
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .modal-body a:hover{ text-decoration: underline; }
+  .modal-body strong{ font-weight: 700; }
+  .modal-body .muted{ color: var(--muted); font-size: 12px; }
 
   main{ padding:0 20px; max-width:520px; margin:0 auto; }
   section{ display:none; }
@@ -98,6 +224,11 @@
   #bestday.visible { display: block; animation:fade .3s ease; }
   #suggested { display: none; }
   #suggested.visible { display: block; animation:fade .3s ease; }
+
+  /* Padding : titre visible + espace bas réduit */
+  #bestpicks { padding-top: 12px; padding-bottom: 100px; }
+  #suggested { padding-top: 12px; padding-bottom: 100px; }
+  #accueil { padding-bottom: 40px; }
 
   .hero{ position:relative; overflow:hidden; background:linear-gradient(135deg, #FFFFFF, var(--surface-2)); border-radius:24px; padding:24px; margin:14px 0 16px; border:1px solid var(--line); box-shadow:0 4px 20px rgba(0,0,0,0.03); }
   .hero-tag{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent); font-weight:700; margin-bottom:6px; }
@@ -190,24 +321,61 @@
   .nav-btn.active{ background:var(--accent); color:#FFFFFF; }
   .nav-badge{ position:absolute; top:0px; right:10px; background:var(--accent); color:#FFFFFF; font-size:8.5px; font-weight:700; border-radius:100px; padding:0 4px; min-width:14px; text-align:center; }
 
-  .floating-best-day { position: fixed; bottom: 85px; right: 20px; background: var(--accent); color: #FFFFFF; border: none; border-radius: 100px; padding: 12px 18px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 6px 20px rgba(5, 150, 105, 0.3); z-index: 90; display: flex; align-items: center; gap: 8px; transition: transform 0.2s; }
+  /* ============ BOUTONS FLOTTANTS ============ */
+  .floating-best-day {
+    position: fixed; bottom: 150px; right: 20px;
+    background: var(--accent); color: #FFFFFF; border: none; border-radius: 100px;
+    padding: 12px 18px; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 13px; cursor: pointer; box-shadow: 0 6px 20px rgba(5, 150, 105, 0.3);
+    z-index: 90; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;
+  }
   .floating-best-day:active { transform: scale(0.95); }
   .floating-best-day:disabled { opacity: 0.6; pointer-events: none; }
   .floating-best-day.hidden { display: none; }
 
-  .floating-suggested { position: fixed; bottom: 145px; right: 20px; width: 52px; height: 52px; background: var(--surface); color: var(--accent); border: 1px solid var(--line); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.08); z-index: 91; transition: transform 0.15s; }
+  .floating-suggested {
+    position: fixed; bottom: 210px; right: 20px;
+    width: 52px; height: 52px;
+    background: var(--surface); color: var(--accent);
+    border: 1px solid var(--line); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    z-index: 91;
+    transition: transform 0.15s;
+  }
   .floating-suggested:active { transform: scale(0.92); }
   .floating-suggested.hidden { display: none; }
   .floating-suggested svg { width: 22px; height: 22px; }
-  .floating-suggested .dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.8s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:0.5; transform:scale(0.85); } }
+  .floating-suggested .dot {
+    position: absolute; top: 6px; right: 6px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:0.5; transform:scale(0.85); }
+  }
 
-  .skel{ background: linear-gradient(90deg, #E2E8F0 0%, #F1F5F9 50%, #E2E8F0 100%); background-size: 200% 100%; animation: skelShine 1.4s ease-in-out infinite; border-radius: 6px; }
-  @keyframes skelShine{ 0%{ background-position: 200% 0; } 100%{ background-position: -200% 0; } }
+  .skel{
+    background: linear-gradient(90deg, #E2E8F0 0%, #F1F5F9 50%, #E2E8F0 100%);
+    background-size: 200% 100%;
+    animation: skelShine 1.4s ease-in-out infinite;
+    border-radius: 6px;
+  }
+  @keyframes skelShine{
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
   .skel-line{ height: 12px; margin-bottom: 8px; border-radius: 6px; }
   .skel-line.sm{ height: 10px; }
   .skel-line.lg{ height: 16px; }
-  .pick-skel{ flex: 0 0 200px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .pick-skel{
+    flex: 0 0 200px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 18px; padding: 16px;
+  }
   .pick-skel .skel-line.w50{ width: 50%; }
   .pick-skel .skel-line.w90{ width: 90%; }
   .pick-skel .skel-line.w40{ width: 40%; }
@@ -218,7 +386,14 @@
   .journal-card .row{ background:none; border:none; padding:0; margin:4px 0 0 0; box-shadow:none; display:flex; justify-content:space-between; font-size:12px; color:var(--text); }
   .journal-card .row .label{ color:var(--muted); font-weight:500; }
   .journal-card .note{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); font-size:12px; color:var(--text); white-space:pre-wrap; line-height:1.5; }
-  .journal-card .remove-x{ position:absolute; top:12px; right:12px; width:22px; height:22px; padding:0; display:flex; align-items:center; justify-content:center; background:var(--surface-2); border:1px solid var(--line); border-radius:50%; cursor:pointer; color:var(--muted); transition:all 0.15s; }
+  .journal-card .remove-x{
+    position:absolute; top:12px; right:12px;
+    width:22px; height:22px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:50%; cursor:pointer; color:var(--muted);
+    transition:all 0.15s;
+  }
   .journal-card .remove-x:hover{ background:#FEE2E2; border-color:#FCA5A5; color:var(--bad); }
   .journal-card .remove-x svg{ width:10px; height:10px; }
   .journal-form{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:14px; box-shadow:0 4px 12px rgba(0,0,0,0.02); }
@@ -230,57 +405,245 @@
   .journal-form .actions button{ flex:1; padding:12px; border-radius:100px; font-weight:600; font-size:13px; cursor:pointer; border:none; }
   .journal-form .btn-save{ background:var(--accent); color:#FFF; box-shadow:0 4px 12px rgba(5,150,105,0.2); }
   .journal-form .btn-cancel{ background:var(--surface-2); color:var(--text); border:1px solid var(--line); }
-  .journal-fabs{ position:fixed; right:20px; bottom:110px; z-index:25; display:none; }
+  .journal-fabs{ position:fixed; right:20px; bottom:160px; z-index:25; display:none; }
   .journal-fabs.visible{ display:block; }
   .journal-fab{ width:52px; height:52px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 20px rgba(5,150,105,0.35); transition:transform 0.15s; }
   .journal-fab:active{ transform:scale(0.92); }
   .journal-fab-add{ background:var(--accent); color:#FFF; }
   .journal-fab svg{ width:22px; height:22px; }
 
-  .hist-note{ display: none; align-items: flex-start; gap: 8px; margin: 0 0 14px 0; padding: 10px 12px; border-radius: 12px; font-size: 11.5px; font-weight: 500; line-height: 1.45; background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.18); color: var(--bad); }
+  .hist-note{
+    display: none; align-items: flex-start; gap: 8px;
+    margin: 0 0 14px 0; padding: 10px 12px;
+    border-radius: 12px; font-size: 11.5px; font-weight: 500;
+    line-height: 1.45;
+    background: rgba(220, 38, 38, 0.06);
+    border: 1px solid rgba(220, 38, 38, 0.18);
+    color: var(--bad);
+  }
   .hist-note.visible{ display: flex; }
   .hist-note svg{ flex-shrink: 0; width: 14px; height: 14px; margin-top: 1px; color: var(--bad); }
 
-  .suggested-card{ position: relative; background: linear-gradient(145deg, #FFFFFF, #F8FAFC); border: 1px solid var(--line); border-radius: 20px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 16px rgba(0,0,0,0.03); }
-  .suggested-card .head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
-  .suggested-card .entity-tag{ font-family:'Space Grotesk'; font-weight:700; font-size:12px; color:var(--accent); display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.05em; }
-  .suggested-card .date-tag{ font-size:10px; color:var(--muted); font-weight:500; }
-  .suggested-card .sel-line{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); padding:5px 0; border-top:1px dashed var(--line); margin-top:6px; padding-top:6px; font-weight:500; }
-  .suggested-card .sel-line:first-of-type{ border-top:none; margin-top:8px; padding-top:0; }
-  .suggested-card .total-line{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px dashed var(--line); margin-top:10px; }
-  .suggested-card .total-line .lbl{ font-size:12px; color:var(--text); font-weight:600; }
-  .suggested-card .total-line .total{ font-family:'Space Grotesk'; font-weight:700; font-size:16px; color:var(--accent); }
-  .suggested-card .entity-block{ background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:8px; }
-  .suggested-card .entity-name{ font-family:'Space Grotesk'; font-weight:700; font-size:12px; color:var(--text); margin-bottom:6px; }
-  .suggested-card .entity-link, .suggested-card .entity-code{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; word-break:break-all; text-decoration:none; }
-  .suggested-card .entity-link{ color:var(--accent); transition:opacity 0.15s; }
+  .suggested-card{
+    position: relative;
+    background: linear-gradient(145deg, #FFFFFF, #F8FAFC);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.03);
+  }
+  .suggested-card .head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:10px;
+  }
+  .suggested-card .entity-tag{
+    font-family:'Space Grotesk'; font-weight:700;
+    font-size:12px; color:var(--accent);
+    display:flex; align-items:center; gap:6px;
+    text-transform:uppercase; letter-spacing:0.05em;
+  }
+  .suggested-card .date-tag{
+    font-size:10px; color:var(--muted); font-weight:500;
+  }
+  .suggested-card .sel-line{
+    display:flex; justify-content:space-between;
+    font-size:11.5px; color:var(--muted);
+    padding:5px 0; border-top:1px dashed var(--line);
+    margin-top:6px; padding-top:6px; font-weight:500;
+  }
+  .suggested-card .sel-line:first-of-type{
+    border-top:none; margin-top:8px; padding-top:0;
+  }
+  .suggested-card .total-line{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-top:1px dashed var(--line);
+    margin-top:10px;
+  }
+  .suggested-card .total-line .lbl{
+    font-size:12px; color:var(--text); font-weight:600;
+  }
+  .suggested-card .total-line .total{
+    font-family:'Space Grotesk'; font-weight:700;
+    font-size:16px; color:var(--accent);
+  }
+  .suggested-card .entity-block{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+    margin-top:8px;
+  }
+  .suggested-card .entity-name{
+    font-family:'Space Grotesk'; font-weight:700;
+    font-size:12px; color:var(--text);
+    margin-bottom:6px;
+  }
+  .suggested-card .entity-link,
+  .suggested-card .entity-code{
+    display:flex; align-items:center; gap:6px;
+    font-size:11.5px; font-weight:600;
+    word-break:break-all; text-decoration:none;
+  }
+  .suggested-card .entity-link{
+    color:var(--accent); transition:opacity 0.15s;
+  }
   .suggested-card .entity-link:hover{ opacity:0.75; }
   .suggested-card .entity-link svg{ width:13px; height:13px; flex-shrink:0; }
   .suggested-card .entity-code{ color:var(--muted); }
   .suggested-card .entity-code svg{ width:13px; height:13px; flex-shrink:0; }
-  .suggested-card .foot{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); }
-  .suggested-card .foot .date{ font-size:10px; color:var(--muted); font-weight:500; }
+  .suggested-card .foot{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:12px; padding-top:10px;
+    border-top:1px dashed var(--line);
+  }
+  .suggested-card .foot .date{
+    font-size:10px; color:var(--muted); font-weight:500;
+  }
 
-  .toast{ position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%) translateY(20px); background: var(--accent); color: #FFFFFF; padding: 12px 22px; border-radius: 100px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 24px rgba(5, 150, 105, 0.35); z-index: 95; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
+  .toast{
+    position: fixed; left: 50%; bottom: 110px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent); color: #FFFFFF;
+    padding: 12px 22px; border-radius: 100px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.35);
+    z-index: 95; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap; max-width: 90vw;
+    overflow: hidden; text-overflow: ellipsis;
+  }
   .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  .warmup-banner{ display: none; text-align: center; padding: 14px 16px; margin: 12px 0; background: var(--accent-dim); border: 1px solid rgba(5,150,105,0.2); border-radius: 14px; font-size: 12.5px; color: var(--accent); font-weight: 600; line-height: 1.45; }
+  /* ============ WARMUP BANNER ============ */
+  .warmup-banner{
+    display: none;
+    text-align: center;
+    padding: 16px 16px;
+    margin: 12px 0;
+    background: var(--accent-dim);
+    border: 1px solid rgba(5,150,105,0.2);
+    border-radius: 14px;
+    color: var(--accent);
+    font-weight: 600;
+    line-height: 1.45;
+  }
   .warmup-banner.visible{ display: block; }
-  .warmup-banner .sub{ font-weight: 500; opacity: 0.8; font-size: 11px; }
+  .warmup-row{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .warmup-hourglass{
+    display: inline-block;
+    font-size: 22px;
+    animation: spinHourglass 2s linear infinite;
+    transform-origin: center;
+  }
+  @keyframes spinHourglass{
+    0%{ transform: rotate(0deg) scale(1); }
+    50%{ transform: rotate(180deg) scale(1.15); }
+    100%{ transform: rotate(360deg) scale(1); }
+  }
+  .warmup-circle{
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    border-top-color: transparent;
+    animation: spinCircle 0.8s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spinCircle{
+    to{ transform: rotate(360deg); }
+  }
+  .warmup-counter{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent);
+    min-width: 30px;
+    text-align: left;
+  }
+  .warmup-text{
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.85;
+    padding: 0 4px;
+  }
 
   /* ============ PUBLICITÉS ============ */
-  .pub-inline{ margin: 16px 0 8px; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); position: relative; }
-  .pub-inline a{ display: block; position: relative; aspect-ratio: 1536 / 284; overflow: hidden; }
-  .pub-inline img{ width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pub-fixed{ position: fixed; bottom: 85px; left: 14px; right: 14px; max-width: 492px; margin: 0 auto; z-index: 19; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.10); display: none; }
-  .pub-fixed.visible{ display: block; }
-  .pub-fixed a{ display: block; aspect-ratio: 1536 / 284; overflow: hidden; }
-  .pub-fixed img{ width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pub-dot-nav{ position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 2; pointer-events: none; }
-  .pub-dot-nav .dot{ width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.55); transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-  .pub-dot-nav .dot.active{ background: #FFFFFF; width: 16px; border-radius: 3px; }
+  .pub-inline{
+    margin: 16px 0 8px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .pub-inline a{
+    display: block;
+    position: relative;
+    aspect-ratio: 1536 / 284;
+    overflow: hidden;
+    background: #FFFFFF;
+  }
+  .pub-inline img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 
-  /* ============ PÉTALES DE CÉLÉBRATION ============ */
+  .pub-fixed{
+    position: fixed;
+    bottom: 85px;
+    left: 14px; right: 14px;
+    max-width: 492px;
+    margin: 0 auto;
+    z-index: 19;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    display: none;
+  }
+  .pub-fixed.visible{ display: block; }
+  .pub-fixed a{
+    display: block;
+    aspect-ratio: 1536 / 284;
+    overflow: hidden;
+    background: #FFFFFF;
+  }
+  .pub-fixed img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .pub-dot-nav{
+    position: absolute;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 5px;
+    z-index: 2; pointer-events: none;
+  }
+  .pub-dot-nav .dot{
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(5,150,105,0.4);
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .pub-dot-nav .dot.active{
+    background: var(--accent);
+    width: 16px; border-radius: 3px;
+  }
+
+  /* ============ PÉTALES ============ */
   .petals-overlay{ position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,150,105,0.92) 0%, rgba(5,150,105,0.85) 100%); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; }
   .petals-overlay.visible{ display: flex; animation: petalsFadeIn 0.3s ease; }
   @keyframes petalsFadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
@@ -308,6 +671,8 @@
 </head>
 <body>
 
+<!-- ============ AUTH OVERLAY (DÉSACTIVÉ TEMPORAIREMENT) ============ -->
+<!--
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-card">
     <div class="auth-title disp">Accès JBa Prono</div>
@@ -317,20 +682,87 @@
     <div class="auth-error" id="authError">Code invalide ou expiré.</div>
   </div>
 </div>
+-->
 
 <header class="top">
   <div class="brand"><div class="brand-dot"></div><div class="brand-name">JBa Prono</div></div>
   <div class="top-right">
-    <button class="logout-btn" onclick="logoutSession()" title="Changer de code">Compte</button>
     <div class="top-date" id="topDate"></div>
+    <button class="menu-btn" id="menuBtn" onclick="toggleMenu(event)" aria-label="Menu">•••</button>
+    <div class="menu-dropdown" id="menuDropdown">
+      <button class="menu-item" onclick="openModal('modalAstuces')">
+        <span class="mi-ico">💡</span> Astuces
+      </button>
+      <button class="menu-item" onclick="openModal('modalInfos')">
+        <span class="mi-ico">ℹ️</span> Infos
+      </button>
+      <button class="menu-item" onclick="openModal('modalContacts')">
+        <span class="mi-ico">📞</span> Contacts
+      </button>
+    </div>
   </div>
 </header>
 
+<!-- ============ MODALES ============ -->
+<div class="modal-overlay" id="modalAstuces" onclick="closeModalOnBg(event, 'modalAstuces')">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">💡 Astuces</div>
+      <button class="modal-close" onclick="closeModal('modalAstuces')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Quelques conseils pour optimiser tes pronostics :</p>
+      <ul>
+        <li>Privilégie les cotes entre 1.10 et 1.40 pour un bon ratio risque/gain.</li>
+        <li>Évite les combinés de plus de 6 sélections.</li>
+        <li>Vérifie toujours les compositions d'équipe avant de valider.</li>
+        <li>Ne mise jamais plus de 35% de ta bankroll/ton capital sur un seul pari.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalInfos" onclick="closeModalOnBg(event, 'modalInfos')">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">ℹ️ Infos</div>
+      <button class="modal-close" onclick="closeModal('modalInfos')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>JBa Prono — version 1.0</strong></p>
+      <p>Application d'aide à la décision basée sur un moteur statistique interne.</p>
+      <p class="muted">Jouez de manière responsable.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalContacts" onclick="closeModalOnBg(event, 'modalContacts')">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">📞 Contacts</div>
+      <button class="modal-close" onclick="closeModal('modalContacts')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Pour toute question ou suggestion :</p>
+      <p>📧 <a href="mailto:contact@jbaprono.com">contact@jbaprono.com</a></p>
+      <p>💬 <a href="https://www.facebook.com/jbaprono" target="_blank" rel="noopener">jbaprono (Facebook)</a></p>
+      <p class="muted">Réponse sous 24-48h.</p>
+    </div>
+  </div>
+</div>
+
 <main>
 
+  <!-- BANNIÈRE WARM-UP -->
   <div class="warmup-banner" id="warmupBanner">
-    ⏳ Réveil du serveur en cours... Cela peut prendre 30 secondes la première fois.<br>
-    <span class="sub">Les prochains chargements seront instantanés.</span>
+    <div class="warmup-row">
+      <span class="warmup-hourglass">⏳</span>
+      <span class="warmup-circle"></span>
+      <span class="warmup-counter" id="warmupCounter">0s</span>
+    </div>
+    <div class="warmup-text">
+      Veuillez patienter les données sont en cours de téléchargement... Cela peut prendre 30 secondes.
+    </div>
   </div>
 
   <!-- ACCUEIL -->
@@ -355,7 +787,7 @@
       <button class="hero-cta" id="heroCta" onclick="addToPanier(currentHeroEventId)" disabled>+ Ajouter au panier</button>
     </div>
 
-    <div class="sec-head"><div class="sec-title disp">Opportunités</div><div class="sec-sub">≥ 66%</div></div>
+    <div class="sec-head"><div class="sec-title disp">Opportunités</div></div>
     <div class="hscroll" id="opportunitesScroll"><div class="empty-state">Chargement…</div></div>
     <div id="pubAccueil" class="pub-inline" style="display:none;"></div>
     <div class="disclaimer" id="disclaimerFallback">Une probabilité ne constitue jamais une garantie de résultat.</div>
@@ -440,14 +872,18 @@
   </section>
 </main>
 
-<button class="floating-suggested" id="floatingSuggestedBtn" onclick="fetchSuggestedTickets()">
+<!-- BOUTON FLOTTANT TICKETS SUGGÉRÉS -->
+<button class="floating-suggested" id="floatingSuggestedBtn" onclick="fetchSuggestedTickets()" aria-label="Tickets suggérés">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z"/>
-    <path d="M9 9h7M9 13h7"/>
+    <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z"/>
+    <path d="M13 6v2"/>
+    <path d="M13 11v2"/>
+    <path d="M13 16v2"/>
   </svg>
   <span class="dot"></span>
 </button>
 
+<!-- BOUTON FLOTTANT BEST DAY -->
 <button class="floating-best-day" id="floatingBestDayBtn" onclick="fetchBestDayInsights()">
   🔥 Best Day
 </button>
@@ -534,18 +970,94 @@ function safeHref(url){
   return '#';
 }
 
+// ============================================================
+// FIX DRIVE ROBUSTE — 3 URLs en cascade
+// ============================================================
+// Extrait l'ID du fichier Google Drive depuis n'importe quelle forme d'URL
+function extractDriveId(url){
+  if (!url) return null;
+  const s = String(url).trim();
+  let m = s.match(/\/file\/d\/([^\/\?#]+)/);
+  if (m) return m[1];
+  m = s.match(/[?&]id=([^&#]+)/);
+  if (m) return m[1];
+  m = s.match(/\/d\/([^\/\?#]+)/);
+  if (m) return m[1];
+  return null;
+}
+
+// Construit une liste de candidats URLs à tester pour une image (Drive ou directe)
+function buildImageCandidates(url){
+  if (!url) return [];
+  const s = String(url).trim();
+  const driveId = extractDriveId(s);
+  if (!driveId){
+    // URL directe (non-Drive) → on retourne telle quelle
+    return [s];
+  }
+  // Drive : on essaie les 3 formats connus
+  return [
+    `https://lh3.googleusercontent.com/d/${driveId}`,
+    `https://drive.google.com/uc?export=view&id=${driveId}`,
+    `https://drive.google.com/thumbnail?id=${driveId}&sz=w1536`,
+  ];
+}
+
+// Crée une image HTML qui essaie chaque URL en cascade jusqu'à succès
+function makeRobustImgElement(imageUrl, altText){
+  const candidates = buildImageCandidates(imageUrl);
+  const img = document.createElement('img');
+  img.alt = altText || 'Publicité';
+  img.loading = 'lazy';
+  img.referrerPolicy = 'no-referrer';
+
+  let idx = 0;
+  const tryNext = () => {
+    if (idx >= candidates.length){
+      // Aucune URL n'a fonctionné → placeholder
+      img.onerror = null;
+      img.src = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 284">' +
+        '<rect fill="#F4F6F9" width="1536" height="284"/>' +
+        '<text x="768" y="150" text-anchor="middle" font-family="Arial" font-size="28" fill="#64748B">Image indisponible</text>' +
+        '</svg>'
+      );
+      return;
+    }
+    img.src = candidates[idx++];
+  };
+
+  img.onerror = tryNext;
+  img.onload = () => {
+    // Si c'est une image "silencieuse" de Drive (1x1), on essaie le suivant
+    if (img.naturalWidth <= 1 || img.naturalHeight <= 1){
+      tryNext();
+      return;
+    }
+    img.onerror = null;
+    img.onload = null;
+  };
+
+  tryNext();
+  return img;
+}
+
+// ============================================================
+// AUTH — DÉSACTIVÉE TEMPORAIREMENT
+// ============================================================
 let currentUserId = localStorage.getItem('jba_user_id');
 let currentCode = localStorage.getItem('jba_auth_code');
 
-function checkAuth(){
-  if(!currentUserId){
-    document.getElementById('authOverlay').style.display = 'flex';
-  } else {
-    document.getElementById('authOverlay').style.display = 'none';
-    initApp();
-  }
+if (!currentUserId) {
+  currentUserId = 'local_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  localStorage.setItem('jba_user_id', currentUserId);
 }
 
+function checkAuth(){
+  initApp();
+}
+
+/* ANCIENNE LOGIQUE AUTH — conservée pour réactivation ultérieure
 async function submitAuthCode(){
   const input = document.getElementById('authCodeInput');
   const errEl = document.getElementById('authError');
@@ -569,6 +1081,7 @@ async function submitAuthCode(){
     pingAnalytics();
   } catch(e) { errEl.style.display = 'block'; }
 }
+*/
 
 function logoutSession(){
   localStorage.removeItem('jba_user_id');
@@ -583,6 +1096,83 @@ let currentHeroEventId = null;
 let suggestedTickets = [];
 
 // ============================================================
+// MENU 3 POINTS + MODALES
+// ============================================================
+function toggleMenu(event){
+  if (event) event.stopPropagation();
+  const dd = document.getElementById('menuDropdown');
+  if (!dd) return;
+  dd.classList.toggle('visible');
+}
+
+function closeMenu(){
+  const dd = document.getElementById('menuDropdown');
+  if (dd) dd.classList.remove('visible');
+}
+
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('menuDropdown');
+  const btn = document.getElementById('menuBtn');
+  if (!dd || !btn) return;
+  if (dd.classList.contains('visible') && !dd.contains(e.target) && !btn.contains(e.target)){
+    dd.classList.remove('visible');
+  }
+});
+
+function openModal(modalId){
+  closeMenu();
+  const el = document.getElementById(modalId);
+  if (el) el.classList.add('visible');
+}
+
+function closeModal(modalId){
+  const el = document.getElementById(modalId);
+  if (el) el.classList.remove('visible');
+}
+
+function closeModalOnBg(event, modalId){
+  if (event.target.id === modalId){
+    closeModal(modalId);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape'){
+    document.querySelectorAll('.modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+    closeMenu();
+  }
+});
+
+// ============================================================
+// WARMUP COUNTER
+// ============================================================
+let _warmupStart = null;
+let _warmupInterval = null;
+
+function showWarmupBanner(){
+  const banner = document.getElementById('warmupBanner');
+  const counter = document.getElementById('warmupCounter');
+  if (!banner || !counter) return;
+  _warmupStart = Date.now();
+  counter.textContent = '0s';
+  if (_warmupInterval) clearInterval(_warmupInterval);
+  _warmupInterval = setInterval(() => {
+    if (!_warmupStart) return;
+    const elapsed = Math.floor((Date.now() - _warmupStart) / 1000);
+    counter.textContent = elapsed + 's';
+  }, 1000);
+  banner.classList.add('visible');
+}
+
+function hideWarmupBanner(){
+  const banner = document.getElementById('warmupBanner');
+  if (!banner) return;
+  banner.classList.remove('visible');
+  if (_warmupInterval){ clearInterval(_warmupInterval); _warmupInterval = null; }
+  _warmupStart = null;
+}
+
+// ============================================================
 // HELPERS
 // ============================================================
 async function fetchJSON(url, options={}){
@@ -590,7 +1180,6 @@ async function fetchJSON(url, options={}){
   const bustedUrl = `${url}${sep}_t=${Date.now()}`;
   const timeoutMs = options.timeoutMs || 25000;
   const maxRetries = options.retries ?? 2;
-  const banner = document.getElementById('warmupBanner');
   const fetchOpts = { ...options };
   delete fetchOpts.timeoutMs;
   delete fetchOpts.retries;
@@ -606,14 +1195,14 @@ async function fetchJSON(url, options={}){
         headers: { ...(options.headers||{}), 'Cache-Control': 'no-cache' }
       });
       clearTimeout(timer);
-      if (banner) banner.classList.remove('visible');
+      hideWarmupBanner();
       if(!res.ok){
         let detail = '';
         try{ const j = await res.json(); detail = j.detail || JSON.stringify(j); }catch(e){}
         const err = new Error(`${res.status} ${detail}`);
         err.status = res.status;
         if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < maxRetries){
-          if (banner) banner.classList.add('visible');
+          showWarmupBanner();
           await new Promise(r => setTimeout(r, 3000));
           continue;
         }
@@ -625,11 +1214,11 @@ async function fetchJSON(url, options={}){
       const isAbort = e.name === 'AbortError';
       const isNet = String(e.message||'').includes('Failed to fetch');
       if ((isAbort || isNet) && attempt < maxRetries){
-        if (banner) banner.classList.add('visible');
+        showWarmupBanner();
         await new Promise(r => setTimeout(r, 3000));
         continue;
       }
-      if (banner) banner.classList.remove('visible');
+      hideWarmupBanner();
       throw e;
     }
   }
@@ -765,7 +1354,7 @@ function cleanOldBets(bets){
 }
 
 // ============================================================
-// PÉTALES DE CÉLÉBRATION
+// PÉTALES
 // ============================================================
 let _petalsTimer = null;
 let _petalsPinned = false;
@@ -1304,13 +1893,27 @@ async function shareSuggestedTicket(index){
   if (!t) return;
   const shareBtn = card.querySelector('.share-btn');
   if (shareBtn) shareBtn.style.visibility = 'hidden';
+
   const fullName = entityFullName(t.entity);
   const linkIsReal = isLink(t.bet_link);
   const linkText = t.bet_link || '';
-  let shareText = `🎟️ *Ticket JBa Prono Suggestion*\n\nCe ticket a été validé sur JBa Prono\n\nCote totale : *${Number(t.total_odds).toFixed(2)}*\n\n`;
-  if (linkIsReal){ shareText += `👉 Disponible sur *${fullName}*\n${linkText}\n\n`; }
-  else if (linkText){ shareText += `👉 Disponible sur *${fullName}*\nCode : ${linkText}\n\n`; }
-  shareText += `Visitez-nous\nhttps://www.jbaprono.com\n\n_JBa Prono, des statistiques fiables pour ne pas perdre._`;
+  const cote = Number(t.total_odds).toFixed(2);
+
+  // ===== NOUVEAU FORMAT DE MESSAGE =====
+  let shareText = `🎟️*Ticket validé sur JBa Prono*\n`;
+  shareText += `_Cote : *${cote}*_\n\n`;
+
+  if (linkIsReal){
+    shareText += `*@Dispo Sur ${fullName}*\n`;
+    shareText += `${linkText}\n\n`;
+  } else if (linkText){
+    shareText += `*@Dispo Sur ${fullName}*\n`;
+    shareText += `${linkText}\n\n`;
+  }
+
+  shareText += `_*🥂JBa Prono, des statistiques fiables pour ne pas perdre.*_\n`;
+  shareText += `https://www.jbaprono.com`;
+
   try {
     const canvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
     if (shareBtn) shareBtn.style.visibility = 'visible';
@@ -1332,7 +1935,7 @@ async function shareSuggestedTicket(index){
 }
 
 // ============================================================
-// PUBLICITÉS
+// PUBLICITÉS (avec chargement Drive robuste)
 // ============================================================
 let ads = [];
 let adRotationTimer = null;
@@ -1381,15 +1984,29 @@ function renderAdInContainers(){
 function paintAd(containerId, ad){
   const el = document.getElementById(containerId);
   if (!el) return;
+
   const dots = ads.length > 1
     ? `<div class="pub-dot-nav">${ads.map((_, i) => `<div class="dot ${i === currentAdIndex ? 'active' : ''}"></div>`).join('')}</div>`
     : '';
-  el.innerHTML = `
-    <a href="${escapeHtml(ad.target_url)}" target="_blank" rel="noopener noreferrer">
-      <img src="${escapeHtml(ad.image_url)}" alt="Publicité" loading="lazy">
-      ${dots}
-    </a>
-  `;
+
+  // Création du lien + image robuste (fallback en cascade pour Drive)
+  const link = document.createElement('a');
+  link.href = ad.target_url || '#';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+
+  const img = makeRobustImgElement(ad.image_url, 'Publicité');
+  link.appendChild(img);
+
+  el.innerHTML = '';
+  el.appendChild(link);
+
+  if (dots){
+    const dotsEl = document.createElement('div');
+    dotsEl.className = 'pub-dot-nav';
+    dotsEl.innerHTML = ads.map((_, i) => `<div class="dot ${i === currentAdIndex ? 'active' : ''}"></div>`).join('');
+    el.appendChild(dotsEl);
+  }
 }
 
 function startAdRotation(){
@@ -1553,7 +2170,7 @@ function renderAccueil() {
 function renderBestPicks(){
   const list = document.getElementById('bestPicksList');
   document.getElementById('bpCount').textContent = predictions.length + ' picks';
-  list.innerHTML = predictions.length ? predictions.map(p=>rowHTML(p)).join('') : '<div class="empty-state">Aucun pronostic ≥66% pour le moment.</div>';
+  list.innerHTML = predictions.length ? predictions.map(p=>rowHTML(p)).join('') : '<div class="empty-state">Aucun pronostic disponible pour le moment.</div>';
 }
 
 function pickCardHTML(p){
