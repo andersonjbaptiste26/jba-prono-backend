@@ -38,6 +38,9 @@ class Competition(Base):
     external_id = Column(String)
     __table_args__ = (UniqueConstraint("league_id", "name", name="uq_competition_league_name"),)
 
+    # Relationship pour accéder au pays via competition.league.country
+    league = relationship("League")
+
 
 class Team(Base):
     __tablename__ = "teams"
