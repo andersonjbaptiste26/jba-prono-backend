@@ -204,6 +204,25 @@ class _FakeEvent:
         self.label = label
 
 
+def _resolve_pays(match) -> str | None:
+    """Retourne le pays de la compétition via League.country,
+    avec fallback sur Team.country si non trouvé."""
+    if not match:
+        return None
+    # 1) Compétition → League.country
+    if match.competition:
+        league = getattr(match.competition, "league", None)
+        if league and league.country:
+            return league.country
+    # 2) Fallback : Team.country (équipe domicile)
+    if match.home_team and match.home_team.country:
+        return match.home_team.country
+    # 3) Fallback : Team.country (équipe extérieur)
+    if match.away_team and match.away_team.country:
+        return match.away_team.country
+    return None
+
+
 def _serialize(p: Prediction, double_chance: dict = None) -> dict:
     event = p.event
     match = event.match if event else None
@@ -216,6 +235,7 @@ def _serialize(p: Prediction, double_chance: dict = None) -> dict:
         "home_team": match.home_team.name if match else None,
         "away_team": match.away_team.name if match else None,
         "competition": match.competition.name if match and match.competition else None,
+        "pays": _resolve_pays(match),
         "kickoff_at": match.kickoff_at.isoformat() if match else None,
         "buts_probables": buts_probables,
     }
