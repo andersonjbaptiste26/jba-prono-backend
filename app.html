@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 
 <title>JBa Prono — Prédictions Football & Analyses Statistiques</title>
 <meta name="description" content="JBa Prono analyse les matchs de football et calcule les probabilités 1X/2X en temps réel. Statistiques fiables pour ne pas perdre.">
@@ -10,6 +10,10 @@
 <meta name="author" content="JBa Prono">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#059669">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JBa Prono">
 
 <link rel="canonical" href="https://www.jbaprono.com/app.html">
 
@@ -60,20 +64,101 @@
     --text:#0F172A; --muted:#64748B; --accent:#059669; --accent-dim:rgba(5,150,105,0.1);
     --good:#059669; --bad:#DC2626; --radius:20px;
     --green-light:#6EE7B7; --yellow:#FCD34D;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --nav-bottom: 14px;
+    --nav-height: 62px;
+    --pub-gap: 8px;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom:90px; }
+  body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom: calc(90px + var(--safe-bottom)); }
   .disp{ font-family:'Space Grotesk',sans-serif; }
   .num{ font-variant-numeric: tabular-nums; }
+
+  .splash-screen{
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #059669 0%, #047857 100%);
+    color: #FFFFFF;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  body.webview .splash-screen{ display: flex; }
+  .splash-screen.hide{ opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash-logo{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    animation: splashFadeUp 0.7s ease-out;
+  }
+  .splash-logo .logo-dot{
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 0 16px rgba(255,255,255,0.8);
+  }
+  .splash-logo .logo-name{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    letter-spacing: -0.5px;
+  }
+  .splash-sub{
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.85;
+    text-align: center;
+    max-width: 260px;
+    line-height: 1.5;
+    margin-bottom: 30px;
+    animation: splashFadeUp 0.9s ease-out;
+  }
+  .splash-loader{
+    width: 36px; height: 36px;
+    border: 3px solid rgba(255,255,255,0.25);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    animation: spinCircle 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  .splash-tagline{
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.75;
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+  @keyframes splashFadeUp{
+    from{ opacity: 0; transform: translateY(14px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spinCircle{ to{ transform: rotate(360deg); } }
 
   header.top{ padding:18px 20px 8px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:rgba(244,246,249,0.9); backdrop-filter:blur(12px); z-index:30; border-bottom:1px solid var(--line); }
   .brand{ display:flex; align-items:center; gap:10px; }
   .brand-dot{ width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
   .brand-name{ font-family:'Space Grotesk'; font-weight:700; font-size:17px; color:var(--text); }
-  .top-right{ display:flex; align-items:center; gap:12px; position:relative; }
+  .top-right{ display:flex; align-items:center; gap:10px; position:relative; }
   .top-date{ font-size:11px; color:var(--muted); font-weight:500; }
 
-  /* ============ MENU 3 POINTS (texte, vert, taille Compte) ============ */
+  .logout-icon-btn{
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    width: 22px; height: 22px;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: color 0.15s, transform 0.15s;
+    margin-right: -2px;
+  }
+  .logout-icon-btn:hover{ color: var(--bad); }
+  .logout-icon-btn:active{ transform: scale(0.9); }
+  .logout-icon-btn svg{ width: 15px; height: 15px; }
+
   .menu-btn{
     background:transparent;
     border:none;
@@ -100,7 +185,7 @@
     border-radius: 16px;
     box-shadow: 0 12px 32px rgba(0,0,0,0.10);
     padding: 6px;
-    min-width: 180px;
+    min-width: 200px;
     display: none;
     z-index: 50;
     animation: menuFadeIn 0.15s ease;
@@ -125,9 +210,18 @@
     text-align: left;
   }
   .menu-item:hover{ background: var(--accent-dim); color: var(--accent); }
-  .menu-item .mi-ico{ font-size: 16px; }
+  .menu-item:hover .mi-svg svg{ color: #047857; }
+  .mi-svg{
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mi-svg svg{
+    width: 18px; height: 18px;
+    color: var(--accent);
+    transition: color 0.12s;
+  }
 
-  /* ============ MODALES ============ */
   .modal-overlay{
     position: fixed; inset: 0;
     background: rgba(15,23,42,0.55);
@@ -167,7 +261,11 @@
     font-weight: 700;
     font-size: 18px;
     color: var(--text);
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .modal-title svg{
+    width: 22px; height: 22px;
+    color: var(--accent);
   }
   .modal-close{
     width: 30px; height: 30px;
@@ -225,7 +323,6 @@
   #suggested { display: none; }
   #suggested.visible { display: block; animation:fade .3s ease; }
 
-  /* Padding : titre visible + espace bas réduit */
   #bestpicks { padding-top: 12px; padding-bottom: 100px; }
   #suggested { padding-top: 12px; padding-bottom: 100px; }
   #accueil { padding-bottom: 40px; }
@@ -306,6 +403,46 @@
   .stat .k{ font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin-top:3px; font-weight:700; }
   .sel-line{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); padding:5px 0; border-top:1px dashed var(--line); margin-top:6px; padding-top:6px; font-weight:500; }
   .sel-line:first-of-type{ border-top:none; margin-top:8px; padding-top:0; }
+
+  .hist-sel{
+    padding: 10px 0;
+    border-top: 1px dashed var(--line);
+  }
+  .hist-sel:first-of-type{ border-top: none; padding-top: 4px; }
+  .hist-sel-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .hist-sel-match{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+  }
+  .hist-sel-odds{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12.5px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .hist-sel-comp{
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .hist-sel-event{
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
   .hist-status{ font-size:9.5px; font-weight:700; padding:3px 9px; border-radius:100px; text-transform:uppercase; }
   .st-gagne{ background:var(--accent-dim); color:var(--accent); }
   .st-perdu{ background:var(--surface-2); color:var(--muted); border:1px solid var(--line); }
@@ -315,15 +452,14 @@
   .api-note{ font-size:10.5px; color:var(--muted); text-align:center; padding:4px 8px; font-weight:500; }
   .api-note.error{ color:var(--bad); }
 
-  nav.bottom{ position:fixed; bottom:14px; left:14px; right:14px; z-index:20; background:rgba(255,255,255,0.85); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:28px; display:flex; padding:6px; max-width:492px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.06); }
+  nav.bottom{ position:fixed; bottom: calc(var(--nav-bottom) + var(--safe-bottom)); left:14px; right:14px; z-index:20; background:rgba(255,255,255,0.85); backdrop-filter:blur(16px); border:1px solid var(--line); border-radius:28px; display:flex; padding:6px; max-width:492px; margin:0 auto; box-shadow:0 10px 25px rgba(0,0,0,0.06); }
   .nav-btn{ flex:1; background:none; border:none; color:var(--muted); font-family:'Inter'; font-size:9.5px; font-weight:600; padding:9px 2px 8px; border-radius:22px; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; }
   .nav-btn .ic{ width:19px; height:19px; }
   .nav-btn.active{ background:var(--accent); color:#FFFFFF; }
   .nav-badge{ position:absolute; top:0px; right:10px; background:var(--accent); color:#FFFFFF; font-size:8.5px; font-weight:700; border-radius:100px; padding:0 4px; min-width:14px; text-align:center; }
 
-  /* ============ BOUTONS FLOTTANTS ============ */
   .floating-best-day {
-    position: fixed; bottom: 150px; right: 20px;
+    position: fixed; bottom: calc(150px + var(--safe-bottom)); right: 20px;
     background: var(--accent); color: #FFFFFF; border: none; border-radius: 100px;
     padding: 12px 18px; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
     font-size: 13px; cursor: pointer; box-shadow: 0 6px 20px rgba(5, 150, 105, 0.3);
@@ -334,7 +470,7 @@
   .floating-best-day.hidden { display: none; }
 
   .floating-suggested {
-    position: fixed; bottom: 210px; right: 20px;
+    position: fixed; bottom: calc(210px + var(--safe-bottom)); right: 20px;
     width: 52px; height: 52px;
     background: var(--surface); color: var(--accent);
     border: 1px solid var(--line); border-radius: 50%;
@@ -405,7 +541,7 @@
   .journal-form .actions button{ flex:1; padding:12px; border-radius:100px; font-weight:600; font-size:13px; cursor:pointer; border:none; }
   .journal-form .btn-save{ background:var(--accent); color:#FFF; box-shadow:0 4px 12px rgba(5,150,105,0.2); }
   .journal-form .btn-cancel{ background:var(--surface-2); color:var(--text); border:1px solid var(--line); }
-  .journal-fabs{ position:fixed; right:20px; bottom:160px; z-index:25; display:none; }
+  .journal-fabs{ position:fixed; right:20px; bottom: calc(160px + var(--safe-bottom)); z-index:25; display:none; }
   .journal-fabs.visible{ display:block; }
   .journal-fab{ width:52px; height:52px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 20px rgba(5,150,105,0.35); transition:transform 0.15s; }
   .journal-fab:active{ transform:scale(0.92); }
@@ -502,7 +638,7 @@
   }
 
   .toast{
-    position: fixed; left: 50%; bottom: 110px;
+    position: fixed; left: 50%; bottom: calc(110px + var(--safe-bottom));
     transform: translateX(-50%) translateY(20px);
     background: var(--accent); color: #FFFFFF;
     padding: 12px 22px; border-radius: 100px;
@@ -515,7 +651,6 @@
   }
   .toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* ============ WARMUP BANNER ============ */
   .warmup-banner{
     display: none;
     text-align: center;
@@ -555,9 +690,6 @@
     animation: spinCircle 0.8s linear infinite;
     display: inline-block;
   }
-  @keyframes spinCircle{
-    to{ transform: rotate(360deg); }
-  }
   .warmup-counter{
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
@@ -573,7 +705,6 @@
     padding: 0 4px;
   }
 
-  /* ============ PUBLICITÉS ============ */
   .pub-inline{
     margin: 16px 0 8px;
     border-radius: 16px;
@@ -598,7 +729,7 @@
 
   .pub-fixed{
     position: fixed;
-    bottom: 85px;
+    bottom: calc(var(--nav-bottom) + var(--nav-height) + var(--pub-gap) + var(--safe-bottom));
     left: 14px; right: 14px;
     max-width: 492px;
     margin: 0 auto;
@@ -643,7 +774,6 @@
     width: 16px; border-radius: 3px;
   }
 
-  /* ============ PÉTALES ============ */
   .petals-overlay{ position: fixed; inset: 0; background: linear-gradient(180deg, rgba(5,150,105,0.92) 0%, rgba(5,150,105,0.85) 100%); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; }
   .petals-overlay.visible{ display: flex; animation: petalsFadeIn 0.3s ease; }
   @keyframes petalsFadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
@@ -667,47 +797,195 @@
   .win-close{ position: absolute; top: -12px; right: -12px; width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line); color: var(--muted); font-size: 14px; font-weight: bold; cursor: pointer; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.15s; z-index: 3; padding: 0; line-height: 1; }
   .win-close.visible{ display: flex; }
   .win-close:hover{ background: #FEE2E2; border-color: #FCA5A5; color: var(--bad); transform: scale(1.1); }
+
+  .offline-overlay{
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15,23,42,0.75);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.25s ease;
+  }
+  .offline-overlay.visible{ display: flex; }
+  .offline-card{
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 32px 24px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .offline-icon{
+    width: 72px; height: 72px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: rgba(220,38,38,0.08);
+    border: 2px solid rgba(220,38,38,0.2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .offline-icon svg{
+    width: 36px; height: 36px;
+    color: var(--bad);
+    animation: offlinePulse 1.8s ease-in-out infinite;
+  }
+  @keyframes offlinePulse{
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:0.5; transform:scale(0.92); }
+  }
+  .offline-title{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .offline-text{
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .offline-retry{
+    width: 100%;
+    background: var(--accent);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 100px;
+    padding: 13px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+    transition: transform 0.15s;
+  }
+  .offline-retry:active{ transform: scale(0.97); }
+  .offline-retry:disabled{ opacity: 0.6; cursor: not-allowed; }
 </style>
 </head>
 <body>
 
-<!-- ============ AUTH OVERLAY (DÉSACTIVÉ TEMPORAIREMENT) ============ -->
-<!--
-<div class="auth-overlay" id="authOverlay" style="display:none;">
-  <div class="auth-card">
-    <div class="auth-title disp">Accès JBa Prono</div>
-    <div class="auth-sub">Entre ton code d'invitation pour accéder à ton compte ou récupérer ton profil sur cet appareil.</div>
-    <input type="text" id="authCodeInput" class="auth-input" placeholder="JBA-XXXX-XXXX" autocomplete="off">
-    <button class="auth-btn" onclick="submitAuthCode()">Valider le code</button>
-    <div class="auth-error" id="authError">Code invalide ou expiré.</div>
+<!-- ============ SPLASH SCREEN ============ -->
+<div class="splash-screen" id="splashScreen">
+  <div class="splash-logo">
+    <div class="logo-dot"></div>
+    <div class="logo-name">JBa Prono</div>
+  </div>
+  <div class="splash-sub">Prédictions football par analyse statistique</div>
+  <div class="splash-loader"></div>
+  <div class="splash-tagline">Chargement de l'application…</div>
+</div>
+
+<!-- ============ OFFLINE OVERLAY ============ -->
+<div class="offline-overlay" id="offlineOverlay">
+  <div class="offline-card">
+    <div class="offline-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="2" y1="2" x2="22" y2="22"/>
+        <path d="M8.5 16.5a5 5 0 0 1 7 0"/>
+        <path d="M2 8.82a15 15 0 0 1 4.17-2.65"/>
+        <path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/>
+        <path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/>
+        <path d="M5 12.55a11 11 0 0 1 5.17-1.9"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+      </svg>
+    </div>
+    <div class="offline-title">Pas de connexion</div>
+    <div class="offline-text">
+      Votre connexion Internet semble interrompue.<br>
+      Vérifiez votre réseau puis réessayez.
+    </div>
+    <button class="offline-retry" id="offlineRetryBtn" onclick="retryConnection()">
+      🔄 Réessayer
+    </button>
   </div>
 </div>
--->
+
+<!-- ============ AUTH OVERLAY ============ -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal-card" style="max-width: 380px;">
+    <div class="modal-head" style="justify-content:center; margin-bottom:8px;">
+      <div class="modal-title" style="justify-content:center;">Accès JBa Prono</div>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:13px; color:var(--muted); margin-bottom:18px;">
+        Entre ton code d'invitation pour accéder à l'application.
+      </p>
+      <input type="text" id="authCodeInput" placeholder="JBA-XXXX-XXXX" autocomplete="off" style="width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:14px; color:var(--text); font-family:'Space Grotesk'; font-size:16px; text-align:center; text-transform:uppercase; letter-spacing:0.1em; outline:none; margin-bottom:14px;">
+      <button type="button" onclick="submitAuthCode()" style="width:100%; background:var(--accent); color:#FFFFFF; border:none; border-radius:100px; padding:14px; font-weight:600; font-size:14px; cursor:pointer; box-shadow:0 4px 12px rgba(5,150,105,0.25);">
+        Valider le code
+      </button>
+      <div id="authError" style="color:var(--bad); font-size:11.5px; margin-top:12px; display:none;">
+        Code invalide ou expiré.
+      </div>
+    </div>
+  </div>
+</div>
 
 <header class="top">
   <div class="brand"><div class="brand-dot"></div><div class="brand-name">JBa Prono</div></div>
   <div class="top-right">
     <div class="top-date" id="topDate"></div>
+
+    <button class="logout-icon-btn" id="logoutBtn" onclick="logoutSession()" title="Se déconnecter" aria-label="Se déconnecter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
+
     <button class="menu-btn" id="menuBtn" onclick="toggleMenu(event)" aria-label="Menu">•••</button>
     <div class="menu-dropdown" id="menuDropdown">
       <button class="menu-item" onclick="openModal('modalAstuces')">
-        <span class="mi-ico">💡</span> Astuces
+        <span class="mi-svg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18h6"/>
+            <path d="M10 22h4"/>
+            <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.34.59 2.63 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/>
+          </svg>
+        </span>
+        Astuces
       </button>
       <button class="menu-item" onclick="openModal('modalInfos')">
-        <span class="mi-ico">ℹ️</span> Infos
+        <span class="mi-svg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </span>
+        Infos
       </button>
       <button class="menu-item" onclick="openModal('modalContacts')">
-        <span class="mi-ico">📞</span> Contacts
+        <span class="mi-svg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </span>
+        Contacts
       </button>
     </div>
   </div>
 </header>
 
-<!-- ============ MODALES ============ -->
+<!-- ============ MODALES MENU ============ -->
 <div class="modal-overlay" id="modalAstuces" onclick="closeModalOnBg(event, 'modalAstuces')">
   <div class="modal-card">
     <div class="modal-head">
-      <div class="modal-title">💡 Astuces</div>
+      <div class="modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18h6"/>
+          <path d="M10 22h4"/>
+          <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.34.59 2.63 1.5 3.5.76.76 1.23 1.52 1.41 2.5"/>
+        </svg>
+        Astuces
+      </div>
       <button class="modal-close" onclick="closeModal('modalAstuces')">✕</button>
     </div>
     <div class="modal-body">
@@ -725,7 +1003,14 @@
 <div class="modal-overlay" id="modalInfos" onclick="closeModalOnBg(event, 'modalInfos')">
   <div class="modal-card">
     <div class="modal-head">
-      <div class="modal-title">ℹ️ Infos</div>
+      <div class="modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        Infos
+      </div>
       <button class="modal-close" onclick="closeModal('modalInfos')">✕</button>
     </div>
     <div class="modal-body">
@@ -739,7 +1024,12 @@
 <div class="modal-overlay" id="modalContacts" onclick="closeModalOnBg(event, 'modalContacts')">
   <div class="modal-card">
     <div class="modal-head">
-      <div class="modal-title">📞 Contacts</div>
+      <div class="modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        Contacts
+      </div>
       <button class="modal-close" onclick="closeModal('modalContacts')">✕</button>
     </div>
     <div class="modal-body">
@@ -753,7 +1043,6 @@
 
 <main>
 
-  <!-- BANNIÈRE WARM-UP -->
   <div class="warmup-banner" id="warmupBanner">
     <div class="warmup-row">
       <span class="warmup-hourglass">⏳</span>
@@ -872,7 +1161,6 @@
   </section>
 </main>
 
-<!-- BOUTON FLOTTANT TICKETS SUGGÉRÉS -->
 <button class="floating-suggested" id="floatingSuggestedBtn" onclick="fetchSuggestedTickets()" aria-label="Tickets suggérés">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8z"/>
@@ -883,7 +1171,6 @@
   <span class="dot"></span>
 </button>
 
-<!-- BOUTON FLOTTANT BEST DAY -->
 <button class="floating-best-day" id="floatingBestDayBtn" onclick="fetchBestDayInsights()">
   🔥 Best Day
 </button>
@@ -957,6 +1244,50 @@ const ENTITY_FULL_NAMES = {
   'BelTiFich':   'Bel Ti Fich',
 };
 
+// ============================================================
+// TRADUCTION PAYS
+// ============================================================
+const COUNTRY_TRANSLATIONS = {
+  'England':      { fr: 'Angleterre',   ht: 'Angletè',    es: 'Inglaterra',   en: 'England' },
+  'Spain':        { fr: 'Espagne',      ht: 'Espay',      es: 'España',       en: 'Spain' },
+  'Italy':        { fr: 'Italie',       ht: 'Itali',      es: 'Italia',       en: 'Italy' },
+  'Germany':      { fr: 'Allemagne',    ht: 'Almay',      es: 'Alemania',     en: 'Germany' },
+  'France':       { fr: 'France',       ht: 'Frans',      es: 'Francia',      en: 'France' },
+  'Netherlands':  { fr: 'Pays-Bas',     ht: 'Peyiba',     es: 'Países Bajos', en: 'Netherlands' },
+  'Portugal':     { fr: 'Portugal',     ht: 'Pòtigal',    es: 'Portugal',     en: 'Portugal' },
+  'Brazil':       { fr: 'Brésil',       ht: 'Brezil',     es: 'Brasil',       en: 'Brazil' },
+  'Europe':       { fr: 'Europe',       ht: 'Ewòp',       es: 'Europa',       en: 'Europe' },
+  'Belgium':      { fr: 'Belgique',     ht: 'Bèljik',     es: 'Bélgica',      en: 'Belgium' },
+  'Turkey':       { fr: 'Turquie',      ht: 'Tiki',       es: 'Turquía',      en: 'Turkey' },
+  'Scotland':     { fr: 'Écosse',       ht: 'Ekòs',       es: 'Escocia',      en: 'Scotland' },
+  'Mexico':       { fr: 'Mexique',      ht: 'Meksik',     es: 'México',       en: 'Mexico' },
+  'Argentina':    { fr: 'Argentine',    ht: 'Ajantin',    es: 'Argentina',    en: 'Argentina' },
+  'USA':          { fr: 'États-Unis',   ht: 'Etazini',    es: 'EE.UU.',       en: 'USA' },
+};
+
+function getUserLang(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLang = (urlParams.get('lang') || '').toLowerCase();
+  if (['fr','ht','es','en'].includes(urlLang)) return urlLang;
+
+  const stored = (localStorage.getItem('jba_lang') || '').toLowerCase();
+  if (['fr','ht','es','en'].includes(stored)) return stored;
+
+  const navLang = (navigator.language || navigator.userLanguage || 'fr').toLowerCase().slice(0,2);
+  if (['fr','ht','es','en'].includes(navLang)) return navLang;
+
+  return 'fr';
+}
+
+function translatePays(pays){
+  if (!pays) return '';
+  const key = String(pays).trim();
+  const lang = getUserLang();
+  const map = COUNTRY_TRANSLATIONS[key];
+  if (!map) return key;
+  return map[lang] || map.fr || key;
+}
+
 function entityFullName(code){ return ENTITY_FULL_NAMES[code] || code; }
 function isLink(url){
   if (!url) return false;
@@ -971,9 +1302,68 @@ function safeHref(url){
 }
 
 // ============================================================
-// FIX DRIVE ROBUSTE — 3 URLs en cascade
+// DÉTECTION WEBVIEW / APK
 // ============================================================
-// Extrait l'ID du fichier Google Drive depuis n'importe quelle forme d'URL
+function isWebViewOrApp(){
+  const ua = navigator.userAgent || '';
+  const isAndroidWebView = /wv\)/.test(ua) || (/Android/.test(ua) && /Version\/[\d.]+/.test(ua) && !/Chrome\/[\d.]+/.test(ua));
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+  const isCapacitor = typeof window.Capacitor !== 'undefined';
+  const isCordova = typeof window.cordova !== 'undefined';
+  return isAndroidWebView || isStandalone || isCapacitor || isCordova;
+}
+
+// ============================================================
+// SPLASH SCREEN
+// ============================================================
+function hideSplash(){
+  const splash = document.getElementById('splashScreen');
+  if (!splash) return;
+  splash.classList.add('hide');
+  setTimeout(() => { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 600);
+}
+
+// ============================================================
+// OFFLINE DETECTION
+// ============================================================
+function showOffline(){
+  const overlay = document.getElementById('offlineOverlay');
+  if (overlay) overlay.classList.add('visible');
+}
+function hideOffline(){
+  const overlay = document.getElementById('offlineOverlay');
+  if (overlay) overlay.classList.remove('visible');
+}
+function retryConnection(){
+  const btn = document.getElementById('offlineRetryBtn');
+  if (btn){ btn.disabled = true; btn.textContent = '⏳ Vérification…'; }
+  if (navigator.onLine){
+    hideOffline();
+    if (btn){ btn.disabled = false; btn.innerHTML = '🔄 Réessayer'; }
+    initApp();
+  } else {
+    setTimeout(() => {
+      if (btn){ btn.disabled = false; btn.innerHTML = '🔄 Réessayer'; }
+      if (navigator.onLine){
+        hideOffline();
+        initApp();
+      }
+    }, 1500);
+  }
+}
+window.addEventListener('online', () => {
+  hideOffline();
+  showToast('✅ Connexion rétablie');
+  initApp();
+});
+window.addEventListener('offline', () => {
+  showOffline();
+});
+
+// ============================================================
+// FIX DRIVE ROBUSTE
+// ============================================================
 function extractDriveId(url){
   if (!url) return null;
   const s = String(url).trim();
@@ -986,16 +1376,11 @@ function extractDriveId(url){
   return null;
 }
 
-// Construit une liste de candidats URLs à tester pour une image (Drive ou directe)
 function buildImageCandidates(url){
   if (!url) return [];
   const s = String(url).trim();
   const driveId = extractDriveId(s);
-  if (!driveId){
-    // URL directe (non-Drive) → on retourne telle quelle
-    return [s];
-  }
-  // Drive : on essaie les 3 formats connus
+  if (!driveId) return [s];
   return [
     `https://lh3.googleusercontent.com/d/${driveId}`,
     `https://drive.google.com/uc?export=view&id=${driveId}`,
@@ -1003,7 +1388,6 @@ function buildImageCandidates(url){
   ];
 }
 
-// Crée une image HTML qui essaie chaque URL en cascade jusqu'à succès
 function makeRobustImgElement(imageUrl, altText){
   const candidates = buildImageCandidates(imageUrl);
   const img = document.createElement('img');
@@ -1014,7 +1398,6 @@ function makeRobustImgElement(imageUrl, altText){
   let idx = 0;
   const tryNext = () => {
     if (idx >= candidates.length){
-      // Aucune URL n'a fonctionné → placeholder
       img.onerror = null;
       img.src = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 284">' +
@@ -1029,11 +1412,7 @@ function makeRobustImgElement(imageUrl, altText){
 
   img.onerror = tryNext;
   img.onload = () => {
-    // Si c'est une image "silencieuse" de Drive (1x1), on essaie le suivant
-    if (img.naturalWidth <= 1 || img.naturalHeight <= 1){
-      tryNext();
-      return;
-    }
+    if (img.naturalWidth <= 1 || img.naturalHeight <= 1){ tryNext(); return; }
     img.onerror = null;
     img.onload = null;
   };
@@ -1043,51 +1422,64 @@ function makeRobustImgElement(imageUrl, altText){
 }
 
 // ============================================================
-// AUTH — DÉSACTIVÉE TEMPORAIREMENT
+// AUTH
 // ============================================================
 let currentUserId = localStorage.getItem('jba_user_id');
 let currentCode = localStorage.getItem('jba_auth_code');
 
-if (!currentUserId) {
-  currentUserId = 'local_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  localStorage.setItem('jba_user_id', currentUserId);
-}
-
 function checkAuth(){
-  initApp();
+  if (!currentUserId){
+    document.getElementById('authOverlay').classList.add('visible');
+  } else {
+    document.getElementById('authOverlay').classList.remove('visible');
+    initApp();
+  }
 }
 
-/* ANCIENNE LOGIQUE AUTH — conservée pour réactivation ultérieure
 async function submitAuthCode(){
   const input = document.getElementById('authCodeInput');
   const errEl = document.getElementById('authError');
-  const code = input.value.trim();
-  if(!code) return;
+  const code = (input.value || '').trim();
+  if (!code) return;
   errEl.style.display = 'none';
+
+  const btn = document.querySelector('#authOverlay button[onclick="submitAuthCode()"]');
+  const oldTxt = btn ? btn.textContent : '';
+  if (btn){ btn.disabled = true; btn.textContent = 'Vérification…'; }
+
   try {
     const res = await fetch(`${API_BASE}/auth/redeem`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ code })
     });
-    if(!res.ok) throw new Error('Code invalide');
+    if (!res.ok) throw new Error('Code invalide');
     const data = await res.json();
     localStorage.setItem('jba_user_id', data.user_id);
     localStorage.setItem('jba_auth_code', code.toUpperCase());
     currentUserId = data.user_id;
     currentCode = code.toUpperCase();
-    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('authOverlay').classList.remove('visible');
     initApp();
     pingAnalytics();
-  } catch(e) { errEl.style.display = 'block'; }
+  } catch(e) {
+    errEl.style.display = 'block';
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = oldTxt; }
+  }
 }
-*/
 
 function logoutSession(){
   localStorage.removeItem('jba_user_id');
   localStorage.removeItem('jba_auth_code');
   location.reload();
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('authOverlay').classList.contains('visible')){
+    submitAuthCode();
+  }
+});
 
 let predictions = [];
 let predictionsById = new Map();
@@ -1138,7 +1530,9 @@ function closeModalOnBg(event, modalId){
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape'){
-    document.querySelectorAll('.modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+    document.querySelectorAll('.modal-overlay.visible').forEach(m => {
+      if (m.id !== 'authOverlay') m.classList.remove('visible');
+    });
     closeMenu();
   }
 });
@@ -1538,8 +1932,17 @@ function renderHistorique(bets, stats){
     const selItems = (b.selections || []);
     const selHtml = selItems.map(s=>{
       const icon = s.result === 'gagne' ? '✅' : s.result === 'perdu' ? '❌' : '⏳';
-      return `<div class="sel-line"><span>${icon} ${escapeHtml(s.match || '')} — ${escapeHtml(s.event || '')}</span><span class="num">${Number(s.odds).toFixed(2)}</span></div>`;
+      const paysComp = [translatePays(s.pays), s.competition].filter(Boolean).join(' · ');
+      return `<div class="hist-sel">
+        <div class="hist-sel-top">
+          <span class="hist-sel-match">${icon} ${escapeHtml(s.match || '')}</span>
+          <span class="hist-sel-odds num">${Number(s.odds).toFixed(2)}</span>
+        </div>
+        ${paysComp ? `<div class="hist-sel-comp">${escapeHtml(paysComp)}</div>` : ''}
+        <div class="hist-sel-event">${escapeHtml(s.event || '')}</div>
+      </div>`;
     }).join('');
+
     const statusText = statusLabel[b.status] || b.status;
     const totalOddsStr = Number(b.total_odds).toFixed(2);
     return `
@@ -1561,18 +1964,99 @@ function renderHistorique(bets, stats){
   }).join('');
 }
 
+// ============================================================
+// WATERMARK — crée un NOUVEAU canvas : image + bandeau + pill URL
+// ============================================================
+// ============================================================
+// WATERMARK — 2 pills : URL (vert/blanc) à gauche + Code (blanc/vert) à droite
+// ============================================================
+function drawRoundedRect(ctx, x, y, w, h, radius){
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+}
+
+function createWatermarkedCanvas(sourceCanvas){
+  const url = 'www.jbaprono.com';
+  const codeLabel = 'invitation code : JBA-PRONO-26';
+  const srcW = sourceCanvas.width;
+  const srcH = sourceCanvas.height;
+
+  // Bandeau bas (proportionnel)
+  const scale = srcW / 600;
+  const bandHeight = Math.round(64 * scale);
+
+  // Nouveau canvas
+  const out = document.createElement('canvas');
+  out.width = srcW;
+  out.height = srcH + bandHeight;
+  const ctx = out.getContext('2d');
+
+  // 1) Fond du bandeau
+  ctx.fillStyle = '#F4F6F9';
+  ctx.fillRect(0, 0, out.width, out.height);
+
+  // 2) Card en haut
+  ctx.drawImage(sourceCanvas, 0, 0);
+
+  // 3) Préparation des polices
+  const fontSize = Math.max(12, Math.round(15 * scale));
+  ctx.font = `700 ${fontSize}px 'Space Grotesk', Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const padding = Math.round(14 * scale);
+  const margin = Math.round(14 * scale);  // marge gauche/droite du bandeau
+  const pillH = fontSize + padding * 1.5;
+  const pillY = srcH + (bandHeight - pillH) / 2;
+  const pillR = pillH / 2;
+
+  // ============ PILL 1 — URL (gauche, vert plein, texte blanc) ============
+  const w1 = ctx.measureText(url).width + padding * 2;
+  const x1 = margin;
+
+  ctx.fillStyle = '#059669';
+  drawRoundedRect(ctx, x1, pillY, w1, pillH, pillR);
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(url, x1 + w1 / 2, pillY + pillH / 2 + 1);
+
+  // ============ PILL 2 — Invitation code (droite, blanc, texte vert) ============
+  const w2 = ctx.measureText(codeLabel).width + padding * 2;
+  const x2 = out.width - margin - w2;
+
+  ctx.fillStyle = '#FFFFFF';
+  drawRoundedRect(ctx, x2, pillY, w2, pillH, pillR);
+  ctx.fill();
+
+  ctx.fillStyle = '#059669';
+  ctx.fillText(codeLabel, x2 + w2 / 2, pillY + pillH / 2 + 1);
+
+  return out;
+}
+
+// ============================================================
+// PARTAGE — Historique
+// ============================================================
 async function shareTicketImage(index) {
   const card = document.getElementById(`ticket-card-${index}`);
   if (!card) return;
   const shareBtn = card.querySelector('.share-btn');
   if (shareBtn) shareBtn.style.visibility = 'hidden';
   try {
-    const canvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
+    const srcCanvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
+    const canvas = createWatermarkedCanvas(srcCanvas);
     if (shareBtn) shareBtn.style.visibility = 'visible';
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'jba-prono-ticket.png', { type: 'image/png' });
+      const shareText = `Découvre mon ticket validé sur JBa Prono 🎯\n\n*@🥂JBa Prono, des pronostics fiables pour ne pas perdre.*\nhttps://www.jbaprono.com`;
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: 'Mon Pari JBa Prono', text: 'Découvre mon ticket validé sur JBa Prono 🎯' }); }
+        try { await navigator.share({ files: [file], title: 'Mon Pari JBa Prono', text: shareText }); }
         catch (err) { if (err.name !== 'AbortError') downloadCanvasAsImage(canvas); }
       } else { downloadCanvasAsImage(canvas); }
     }, 'image/png');
@@ -1791,16 +2275,18 @@ async function shareBestDayPDF(index) {
     container.appendChild(clone);
     document.body.appendChild(container);
     await new Promise(resolve => setTimeout(resolve, 400));
-    const canvas = await html2canvas(container, { scale: 3, useCORS: true, backgroundColor: '#F4F6F9', logging: false, width: container.scrollWidth, height: container.scrollHeight });
+    const srcCanvas = await html2canvas(container, { scale: 3, useCORS: true, backgroundColor: '#F4F6F9', logging: false, width: container.scrollWidth, height: container.scrollHeight });
     document.body.removeChild(container);
+    const canvas = createWatermarkedCanvas(srcCanvas);
     const imgData = canvas.toDataURL('image/jpeg', 0.98);
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'landscape' : 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
     pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
     const pdfBlob = pdf.output('blob');
     const file = new File([pdfBlob], 'jba-bestday-ticket.pdf', { type: 'application/pdf' });
+    const shareText = `🔥 Découvre les matchs du Best Day sur JBa Prono !\n\n*@🥂JBa Prono, des pronostics fiables pour ne pas perdre.*\nhttps://www.jbaprono.com`;
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'JBa Prono · Best Day', text: '🔥 Découvre les matchs du Best Day sur JBa Prono !' }); }
+      try { await navigator.share({ files: [file], title: 'JBa Prono · Best Day', text: shareText }); }
       catch (err) { if (err.name !== 'AbortError') downloadPDF(pdfBlob); }
     } else { downloadPDF(pdfBlob); }
   } catch (err) { alert('Impossible de générer le PDF.'); }
@@ -1899,7 +2385,6 @@ async function shareSuggestedTicket(index){
   const linkText = t.bet_link || '';
   const cote = Number(t.total_odds).toFixed(2);
 
-  // ===== NOUVEAU FORMAT DE MESSAGE =====
   let shareText = `🎟️*Ticket validé sur JBa Prono*\n`;
   shareText += `_Cote : *${cote}*_\n\n`;
 
@@ -1911,11 +2396,12 @@ async function shareSuggestedTicket(index){
     shareText += `${linkText}\n\n`;
   }
 
-  shareText += `_*🥂JBa Prono, des statistiques fiables pour ne pas perdre.*_\n`;
+  shareText += `_*🥂JBa Prono, des pronostics fiables pour ne pas perdre.*_\n`;
   shareText += `https://www.jbaprono.com`;
 
   try {
-    const canvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
+    const srcCanvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
+    const canvas = createWatermarkedCanvas(srcCanvas);
     if (shareBtn) shareBtn.style.visibility = 'visible';
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'jba-prono-ticket-suggere.png', { type: 'image/png' });
@@ -1935,7 +2421,7 @@ async function shareSuggestedTicket(index){
 }
 
 // ============================================================
-// PUBLICITÉS (avec chargement Drive robuste)
+// PUBLICITÉS
 // ============================================================
 let ads = [];
 let adRotationTimer = null;
@@ -1950,6 +2436,19 @@ async function loadAds(){
     ads = [];
   }
   renderAds();
+  adjustAdsPositionForWebView();
+}
+
+function adjustAdsPositionForWebView(){
+  if (isWebViewOrApp()){
+    document.querySelectorAll('.pub-fixed').forEach(el => {
+      el.style.bottom = 'calc(var(--nav-bottom) + var(--nav-height) + var(--pub-gap) + var(--safe-bottom) + 6px)';
+    });
+    const bestDay = document.getElementById('floatingBestDayBtn');
+    const sugg = document.getElementById('floatingSuggestedBtn');
+    if (bestDay) bestDay.style.bottom = 'calc(156px + var(--safe-bottom) + 6px)';
+    if (sugg) sugg.style.bottom = 'calc(216px + var(--safe-bottom) + 6px)';
+  }
 }
 
 function renderAds(){
@@ -1985,11 +2484,6 @@ function paintAd(containerId, ad){
   const el = document.getElementById(containerId);
   if (!el) return;
 
-  const dots = ads.length > 1
-    ? `<div class="pub-dot-nav">${ads.map((_, i) => `<div class="dot ${i === currentAdIndex ? 'active' : ''}"></div>`).join('')}</div>`
-    : '';
-
-  // Création du lien + image robuste (fallback en cascade pour Drive)
   const link = document.createElement('a');
   link.href = ad.target_url || '#';
   link.target = '_blank';
@@ -2001,7 +2495,7 @@ function paintAd(containerId, ad){
   el.innerHTML = '';
   el.appendChild(link);
 
-  if (dots){
+  if (ads.length > 1){
     const dotsEl = document.createElement('div');
     dotsEl.className = 'pub-dot-nav';
     dotsEl.innerHTML = ads.map((_, i) => `<div class="dot ${i === currentAdIndex ? 'active' : ''}"></div>`).join('');
@@ -2122,7 +2616,11 @@ async function fetchSuggestedTickets(){
 // ============================================================
 document.getElementById('topDate').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'short', day:'numeric', month:'short'});
 
+let _appInitialized = false;
 function initApp(){
+  if (_appInitialized) return;
+  _appInitialized = true;
+
   saveLocalBets(cleanOldBets(getLocalBets()));
   updateJournalCount();
   updateFloatingButtons('accueil');
@@ -2133,9 +2631,30 @@ function initApp(){
   syncLocalBetsWithResults().catch(()=>{});
   pingAnalytics();
   loadAds();
+
+  setTimeout(hideSplash, 800);
 }
 
-checkAuth();
+// ============================================================
+// BOOT
+// ============================================================
+(function boot(){
+  if (!navigator.onLine){
+    showOffline();
+  }
+
+  if (isWebViewOrApp()){
+    document.body.classList.add('webview');
+    console.log('[JBa Prono] Mode WebView/APK détecté — splash activé');
+    setTimeout(hideSplash, 2500);
+  } else {
+    const splash = document.getElementById('splashScreen');
+    if (splash) splash.remove();
+    console.log('[JBa Prono] Mode navigateur — splash désactivé');
+  }
+
+  checkAuth();
+})();
 
 // ============================================================
 // RENDU — ACCUEIL / PICKS / PANIER
@@ -2176,9 +2695,10 @@ function renderBestPicks(){
 function pickCardHTML(p){
   const pct = Math.round(p.probability);
   const isAdded = panier.some(item => item.event_id === p.event_id);
+  const paysDisplay = p.pays ? translatePays(p.pays) : '';
   return `
     <div class="pick-card">
-      <div class="pick-comp">${escapeHtml(p.competition || '')}</div>
+      <div class="pick-comp">${paysDisplay ? escapeHtml(paysDisplay) + ' · ' : ''}${escapeHtml(p.competition || '')}</div>
       <div class="pick-teams">${escapeHtml(p.match)}</div>
       <div class="pick-num num">${pct}%</div>
       <div class="pick-event">${escapeHtml(p.event)}</div>
@@ -2192,12 +2712,13 @@ function pickCardHTML(p){
 function rowHTML(p){
   const pct = Math.round(p.probability);
   const isAdded = panier.some(item => item.event_id === p.event_id);
+  const paysDisplay = p.pays ? translatePays(p.pays) : '';
   return `
     <div class="row">
       <div class="row-top">
         <div>
           <div class="row-teams disp">${escapeHtml(p.match)}</div>
-          <div class="row-comp">${escapeHtml(p.competition || '')} · ${formatKickoff(p.kickoff_at)}</div>
+          <div class="row-comp">${paysDisplay ? escapeHtml(paysDisplay) + ' · ' : ''}${escapeHtml(p.competition || '')} · ${formatKickoff(p.kickoff_at)}</div>
         </div>
         <div class="row-right">
           <div class="row-pct num">${pct}%</div>
@@ -2221,7 +2742,16 @@ function addToPanier(eventId){
   if(eventId==null || panier.find(p=>p.event_id===eventId)) return;
   const pred = predictionsById.get(eventId);
   if(!pred) return;
-  panier.push({ event_id: eventId, match: pred.match, event: pred.event, event_type: pred.event_type, odds: pred.odds, probability: pred.probability });
+  panier.push({
+    event_id: eventId,
+    match: pred.match,
+    event: pred.event,
+    event_type: pred.event_type,
+    odds: pred.odds,
+    probability: pred.probability,
+    competition: pred.competition || null,
+    pays: pred.pays || null
+  });
   const b1 = document.getElementById('btn-add-'+eventId); if(b1){ b1.textContent='✓ Ajouté'; b1.disabled=true; }
   const b2 = document.getElementById('pick-add-'+eventId); if(b2){ b2.textContent='✓'; b2.classList.add('added'); }
   if(eventId === currentHeroEventId){
@@ -2280,7 +2810,17 @@ function validerPari(){
     created_at: new Date().toISOString(),
     total_odds: Number(totalOdds.toFixed(3)),
     status: "en_cours",
-    selections: panier.map(p => ({ event_id: p.event_id, match: p.match, event: p.event, event_type: p.event_type, odds: p.odds, probability: p.probability, result: null }))
+    selections: panier.map(p => ({
+      event_id: p.event_id,
+      match: p.match,
+      event: p.event,
+      event_type: p.event_type,
+      odds: p.odds,
+      probability: p.probability,
+      competition: p.competition || null,
+      pays: p.pays || null,
+      result: null
+    }))
   };
   const all = getLocalBets();
   all.unshift(newBet);
@@ -2294,4 +2834,4 @@ function validerPari(){
 }
 </script>
 </body>
-  </html>
+</html>
