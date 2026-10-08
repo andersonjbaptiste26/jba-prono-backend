@@ -2049,7 +2049,17 @@ async function shareTicketImage(index) {
   const shareBtn = card.querySelector('.share-btn');
   if (shareBtn) shareBtn.style.visibility = 'hidden';
   try {
-    const srcCanvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
+    const srcCanvas = await html2canvas(card, {
+      backgroundColor: '#F4F6F9',
+      scale: 4,                 // ⬅️ 2 → 4 (HD/UHD)
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      letterRendering: true,
+      imageTimeout: 15000,
+      windowWidth: card.scrollWidth,
+      windowHeight: card.scrollHeight
+    });
     const canvas = createWatermarkedCanvas(srcCanvas);
     if (shareBtn) shareBtn.style.visibility = 'visible';
     canvas.toBlob(async (blob) => {
@@ -2059,7 +2069,7 @@ async function shareTicketImage(index) {
         try { await navigator.share({ files: [file], title: 'Mon Pari JBa Prono', text: shareText }); }
         catch (err) { if (err.name !== 'AbortError') downloadCanvasAsImage(canvas); }
       } else { downloadCanvasAsImage(canvas); }
-    }, 'image/png');
+    }, 'image/png', 1.0);   // ⬅️ qualité PNG max
   } catch (err) {
     if (shareBtn) shareBtn.style.visibility = 'visible';
     alert('Impossible de générer l\'image du ticket.');
@@ -2400,7 +2410,17 @@ async function shareSuggestedTicket(index){
   shareText += `https://www.jbaprono.com`;
 
   try {
-    const srcCanvas = await html2canvas(card, { backgroundColor: '#F4F6F9', scale: 2, useCORS: true });
+    const srcCanvas = await html2canvas(card, {
+      backgroundColor: '#F4F6F9',
+      scale: 4,                 // ⬅️ 2 → 4 (HD/UHD)
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      letterRendering: true,
+      imageTimeout: 15000,
+      windowWidth: card.scrollWidth,
+      windowHeight: card.scrollHeight
+    });
     const canvas = createWatermarkedCanvas(srcCanvas);
     if (shareBtn) shareBtn.style.visibility = 'visible';
     canvas.toBlob(async (blob) => {
@@ -2412,7 +2432,7 @@ async function shareSuggestedTicket(index){
         try { await navigator.share({ title: `JBa Prono · ${fullName}`, text: shareText }); }
         catch (err) { if (err.name !== 'AbortError') downloadCanvasAsImage(canvas); }
       } else { downloadCanvasAsImage(canvas); }
-    }, 'image/png');
+    }, 'image/png', 1.0);   // ⬅️ qualité PNG max
   } catch (err) {
     if (shareBtn) shareBtn.style.visibility = 'visible';
     console.error('Erreur partage :', err);
@@ -2420,6 +2440,7 @@ async function shareSuggestedTicket(index){
   }
 }
 
+  
 // ============================================================
 // PUBLICITÉS
 // ============================================================
