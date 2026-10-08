@@ -456,6 +456,14 @@
   .nav-btn{ flex:1; background:none; border:none; color:var(--muted); font-family:'Inter'; font-size:9.5px; font-weight:600; padding:9px 2px 8px; border-radius:22px; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; }
   .nav-btn .ic{ width:19px; height:19px; }
   .nav-btn.active{ background:var(--accent); color:#FFFFFF; }
+  .nav-btn.locked{ opacity: 0.55; }
+  .nav-btn.locked::after{
+    content: "🔒";
+    position: absolute;
+    top: 3px; right: 8px;
+    font-size: 9px;
+    line-height: 1;
+  }
   .nav-badge{ position:absolute; top:0px; right:10px; background:var(--accent); color:#FFFFFF; font-size:8.5px; font-weight:700; border-radius:100px; padding:0 4px; min-width:14px; text-align:center; }
 
   .floating-best-day {
@@ -1041,6 +1049,33 @@
   </div>
 </div>
 
+<!-- ============ MODAL JOURNAL VERROUILLÉ ============ -->
+<div class="modal-overlay" id="modalJournalLocked" onclick="closeModalOnBg(event, 'modalJournalLocked')">
+  <div class="modal-card" style="max-width:340px; text-align:center;">
+    <div class="modal-head" style="justify-content:center; margin-bottom:10px;">
+      <div class="modal-title" style="justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Accès réservé
+      </div>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:13px; color:var(--muted); line-height:1.6;">
+        Le <strong>Journal</strong> est une fonctionnalité réservée aux membres avec un code personnel.
+      </p>
+      <p style="font-size:12px; color:var(--muted); margin-top:6px;">
+        💬 Contactez-Nous. <a href='https://wa.me/+50935237051'>WhatsApp : +509 3523-7051</a> pour obtenir un accès complet de la version premium payante, pour plus de matches , de tickets et de pronostics ".
+      </p>
+      <button type="button" onclick="closeModal('modalJournalLocked')"
+        style="margin-top:18px; width:100%; background:var(--accent); color:#FFF; border:none; border-radius:100px; padding:12px; font-weight:600; font-size:13.5px; cursor:pointer; box-shadow:0 4px 12px rgba(5,150,105,0.25);">
+        Compris
+      </button>
+    </div>
+  </div>
+</div>
+
 <main>
 
   <div class="warmup-banner" id="warmupBanner">
@@ -1212,7 +1247,7 @@
     Panier
     <span class="nav-badge" id="panierBadge" style="display:none;">0</span>
   </button>
-  <button class="nav-btn" data-target="journal" onclick="showTab('journal', this)">
+  <button class="nav-btn" id="navJournalBtn" data-target="journal" onclick="showTab('journal', this)">
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 20h9"/>
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -1427,12 +1462,42 @@ function makeRobustImgElement(imageUrl, altText){
 let currentUserId = localStorage.getItem('jba_user_id');
 let currentCode = localStorage.getItem('jba_auth_code');
 
+// ============================================================
+// ACCÈS JOURNAL — restreint pour le code public
+// ============================================================
+const PUBLIC_CODE = 'JBA-PRONO-26';
+
+function isPublicCode(){
+  const code = (localStorage.getItem('jba_auth_code') || '').trim().toUpperCase();
+  return code === PUBLIC_CODE;
+}
+
+function showJournalLocked(){
+  // Ferme d'éventuels modales déjà ouvertes
+  document.querySelectorAll('.modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+  openModal('modalJournalLocked');
+}
+
+function applyJournalLockUI(){
+  // Ajoute un petit cadenas visuel sur le bouton Journal si code public
+  const navBtn = document.getElementById('navJournalBtn');
+  if (!navBtn) return;
+  if (isPublicCode()){
+    navBtn.classList.add('locked');
+    navBtn.setAttribute('aria-label', 'Journal (accès réservé)');
+  } else {
+    navBtn.classList.remove('locked');
+    navBtn.setAttribute('aria-label', 'Journal');
+  }
+}
+
 function checkAuth(){
   if (!currentUserId){
     document.getElementById('authOverlay').classList.add('visible');
   } else {
     document.getElementById('authOverlay').classList.remove('visible');
     initApp();
+    applyJournalLockUI();
   }
 }
 
@@ -1461,6 +1526,7 @@ async function submitAuthCode(){
     currentCode = code.toUpperCase();
     document.getElementById('authOverlay').classList.remove('visible');
     initApp();
+    applyJournalLockUI();
     pingAnalytics();
   } catch(e) {
     errEl.style.display = 'block';
@@ -1965,9 +2031,6 @@ function renderHistorique(bets, stats){
 }
 
 // ============================================================
-// WATERMARK — crée un NOUVEAU canvas : image + bandeau + pill URL
-// ============================================================
-// ============================================================
 // WATERMARK — 2 pills : URL (vert/blanc) à gauche + Code (blanc/vert) à droite
 // ============================================================
 function drawRoundedRect(ctx, x, y, w, h, radius){
@@ -2041,7 +2104,7 @@ function createWatermarkedCanvas(sourceCanvas){
 }
 
 // ============================================================
-// PARTAGE — Historique
+// PARTAGE — Historique (HD/UHD)
 // ============================================================
 async function shareTicketImage(index) {
   const card = document.getElementById(`ticket-card-${index}`);
@@ -2099,6 +2162,8 @@ function updateJournalCount(){
   el.textContent = n + (n > 1 ? ' notes' : n === 1 ? ' note' : '');
 }
 function openJournalForm(){
+  // 🔒 sécurité supplémentaire : bloque même si appelé directement
+  if (isPublicCode()){ showJournalLocked(); return; }
   document.getElementById('journalFormView').style.display = 'block';
   document.getElementById('journalListView').style.display = 'none';
   document.getElementById('journalFabs').classList.remove('visible');
@@ -2114,6 +2179,7 @@ function cancelJournalForm(){
   renderJournalList();
 }
 function saveJournalEntry(){
+  if (isPublicCode()){ showJournalLocked(); return; }
   const date = new Date().toISOString().slice(0,10);
   const pays = document.getElementById('jPays').value.trim();
   const equipe = document.getElementById('jEquipe').value.trim();
@@ -2132,6 +2198,7 @@ function saveJournalEntry(){
   renderJournalList();
 }
 function openJournalList(){
+  if (isPublicCode()){ showJournalLocked(); return; }
   document.getElementById('journalFormView').style.display = 'none';
   document.getElementById('journalListView').style.display = 'block';
   document.getElementById('journalFabs').classList.add('visible');
@@ -2158,6 +2225,7 @@ function renderJournalList(){
   `).join('');
 }
 function deleteJournalEntry(id){
+  if (isPublicCode()){ showJournalLocked(); return; }
   if (!confirm('Supprimer cette note ?')) return;
   saveJournalEntries(getJournalEntries().filter(e => e.id !== id));
   renderJournalList();
@@ -2572,6 +2640,12 @@ function updateFloatingButtons(tabId){
 }
 
 function showTab(id, btn){
+  // 🔒 Bloque l'accès au Journal pour le code public
+  if (id === 'journal' && isPublicCode()){
+    showJournalLocked();
+    return;
+  }
+
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -2641,6 +2715,13 @@ let _appInitialized = false;
 function initApp(){
   if (_appInitialized) return;
   _appInitialized = true;
+
+  // 🔒 Cache le FAB Journal + applique le cadenas visuel pour le code public
+  if (isPublicCode()){
+    const fabs = document.getElementById('journalFabs');
+    if (fabs) fabs.style.display = 'none';
+  }
+  applyJournalLockUI();
 
   saveLocalBets(cleanOldBets(getLocalBets()));
   updateJournalCount();
@@ -2855,4 +2936,4 @@ function validerPari(){
 }
 </script>
 </body>
-</html>
+  </html>
