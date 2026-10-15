@@ -103,13 +103,16 @@ def import_matches_json(
 def list_best_day_matches(db: Session = Depends(get_db)):
     today = date_type.today()
 
+    # Marque les matchs du passé comme "Finish"
     db.query(BestDay).filter(
         BestDay.date < today, BestDay.status == "Not Yet"
     ).update({"status": "Finish"})
     db.commit()
 
+    # Récupère la liste des équipes favorites
     favorite_teams = {row.equipe for row in db.query(MatchesBestDay.equipe).all()}
 
+    # Récupère les matchs d'aujourd'hui et futurs
     matches = (
         db.query(BestDay)
         .filter(BestDay.date >= today)
@@ -119,8 +122,15 @@ def list_best_day_matches(db: Session = Depends(get_db)):
 
     result = []
     for m in matches:
-        if m.equipe_domicile in favorite_teams and m.equipe_exterieur in favorite_teams:
+        # CORRECTION : garde le match si AU MOINS UNE équipe est favorite
+        # (avant : on sautait si les DEUX étaient favorites → trop de matchs supprimés)
+        home_is_fav = m.equipe_domicile in favorite_teams
+        away_is_fav = m.equipe_exterieur in favorite_teams
+
+        if not home_is_fav and not away_is_fav:
+            # Aucune équipe favorite → on saute
             continue
+
         result.append({
             "id": m.id,
             "championnat": m.championnat,
