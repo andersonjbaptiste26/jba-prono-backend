@@ -1,5 +1,5 @@
 import os
-from datetime import date as date_type
+from datetime import date as date_type, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
@@ -98,12 +98,46 @@ def import_matches_json(
     }
 
 
+# ============================================================
+# FONCTION DE NETTOYAGE AUTOMATIQUE
+# Supprime les matchs de plus de 1 jour (J-1 et avant)
+# ============================================================
+def _cleanup_old_matches(db: Session) -> int:
+    """
+    Supprime les matchs du best_day dont la date est < J-1.
+    Garde uniquement : J-1, J, J+1, J+2, ...
+    
+    Retourne le nombre de matchs supprimés.
+    """
+    today = date_type.today()
+    cutoff_date = today - timedelta(days=1)  # J-1
+    
+    deleted = db.query(BestDay).filter(
+        BestDay.date < cutoff_date
+    ).delete(synchronize_session=False)
+    
+    if deleted > 0:
+        db.commit()
+        print(f"[Best Day] 🧹 {deleted} match(s) obsolète(s) supprimé(s) (cutoff: {cutoff_date})")
+    
+    return deleted
+
+
 @router.get("/best-day/matches")
 @cached(ttl_seconds=1500, prefix="best_day_matches")  # 25 min
 def list_best_day_matches(db: Session = Depends(get_db)):
     today = date_type.today()
 
-    # Marque les matchs du passé comme "Finish"
+    # ========== NETTOYAGE AUTOMATIQUE ==========
+    # Supprime les matchs de J-2 et avant
+    deleted_count = _cleanup_old_matches(db)
+    if deleted_count > 0:
+        # Invalide le cache car la DB a changé
+        from ..cache import cache_invalidate
+        cache_invalidate("best_day_")
+    # ==========================================
+
+    # Marque les matchs du passé (hier) comme "Finish"
     db.query(BestDay).filter(
         BestDay.date < today, BestDay.status == "Not Yet"
     ).update({"status": "Finish"})
@@ -122,13 +156,11 @@ def list_best_day_matches(db: Session = Depends(get_db)):
 
     result = []
     for m in matches:
-        # CORRECTION : garde le match si AU MOINS UNE équipe est favorite
-        # (avant : on sautait si les DEUX étaient favorites → trop de matchs supprimés)
+        # Garde le match si AU MOINS UNE équipe est favorite
         home_is_fav = m.equipe_domicile in favorite_teams
         away_is_fav = m.equipe_exterieur in favorite_teams
 
         if not home_is_fav and not away_is_fav:
-            # Aucune équipe favorite → on saute
             continue
 
         result.append({
